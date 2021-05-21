@@ -58,7 +58,7 @@ def s_to_i(s):
 
 x,y = [], []
 for _ in trange(10000):
-    instructions = [generate_assembly_instruction() for _ in range(random.randint(1,3))]
+    instructions = [generate_assembly_instruction() for _ in range(random.randint(1,50))]
 
     result = execute_assembly(instructions)
     result = torch.tensor(result, dtype=torch.float)
@@ -77,7 +77,10 @@ dataset = TensorDataset(x, y)
 
 model = lstm_seq2seq(21, 256)
 model = model.to(device)
-model.train_model(train_dataset=dataset, batch_size=32, n_epochs=3, target_len=6)
+training_loss = model.train_model(train_dataset=dataset, batch_size=32, n_epochs=10, target_len=6)
+
+plt.plot(training_loss)
+plt.show()
 
 '''
 TODO: Create seq2seq model where the RNN predicts the output digits 

@@ -8,6 +8,12 @@ from torch import optim
 import torch.nn.functional as F
 from torch.utils.data.dataloader import DataLoader
 
+if torch.cuda.is_available():  
+    device = "cuda:0" 
+else:  
+    device = "cpu" 
+
+
 
 class lstm_encoder(nn.Module):
     ''' Encodes time-series sequence '''
@@ -51,8 +57,8 @@ class lstm_encoder(nn.Module):
         : return:              zeroed hidden state and cell state 
         '''
         
-        return (torch.zeros(batch_size, self.num_layers, self.hidden_size),
-                torch.zeros(batch_size, self.num_layers, batch_size, self.hidden_size))
+        return (torch.zeros(batch_size, self.num_layers, self.hidden_size).to(device),
+                torch.zeros(batch_size, self.num_layers, batch_size, self.hidden_size).to(device))
 
 
 class lstm_decoder(nn.Module):
@@ -133,12 +139,7 @@ class lstm_seq2seq(nn.Module):
         :                                  reduces the amount of teacher forcing for each epoch
         : return losses:                   array of loss function for each epoch
         '''
-        
-        if torch.cuda.is_available():  
-            device = "cuda:0" 
-        else:  
-            device = "cpu" 
-
+    
         # initialize array of losses 
         losses = np.full(n_epochs, np.nan)
 
@@ -161,6 +162,7 @@ class lstm_seq2seq(nn.Module):
                     # select data 
                     code, target = data
                     code = code.float()
+
                     code = code.to(device)
                     target = target.to(device)
 
@@ -178,7 +180,7 @@ class lstm_seq2seq(nn.Module):
 
                     # decoder with teacher forcing
                     decoder_input = code[:, -1, :]   # shape: (batch_size, input_size)
-                    decoder_input = torch.zeros((batch_size, 1))
+                    decoder_input = torch.zeros((batch_size, 1)).to(device)
                     decoder_hidden = encoder_hidden
 
                     if training_prediction == 'recursive':
@@ -218,7 +220,7 @@ class lstm_seq2seq(nn.Module):
                                 decoder_input = decoder_output
                     batches += 1
 
-                    outputs = torch.transpose(outputs.squeeze(), 0, 1)
+                    outputs = torch.transpose(outputs.squeeze(), 0, 1).to(device)
 
                     # compute the loss 
                     loss = criterion(outputs, target)
