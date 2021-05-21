@@ -5,6 +5,7 @@ from torch.utils.data.dataloader import DataLoader
 import torch.nn as nn
 from matplotlib import pyplot as plt
 from tqdm import trange
+from model import lstm_seq2seq
 
 if torch.cuda.is_available():  
   device = "cuda:0" 
@@ -35,7 +36,7 @@ def execute_assembly(instructions):
             registers[dest_reg] -= int(source)
         elif instr_type == "MOV":
             registers[dest_reg] = int(source)
-    return sum(registers)
+    return registers
 
 # Generate a random assembly instruction
 def generate_assembly_instruction():
@@ -73,63 +74,10 @@ x = torch.nn.utils.rnn.pad_sequence(x, batch_first=True)
 y = torch.stack(y)
 
 dataset = TensorDataset(x, y)
-data_loader = DataLoader(dataset, batch_size=128, drop_last=True)
 
-class LSTM(nn.Module):
-    def __init__(self, input_size, hidden_size):
-        self.name = "LSTM"
-        super(LSTM, self).__init__()
-        self.hidden_size = hidden_size
-        self.n_layers = 1
-        self.LSTM = nn.LSTM(input_size, hidden_size, batch_first=True)
-        self.fc = nn.Linear(hidden_size, 1)
-        self.prev = None
-
-    def forward(self, input_data):
-        lstm_output, _ = self.LSTM(input_data)
-
-        # if self.prev == None:
-        #     self.prev = lstm_output[:, -1, :]
-        # else:
-        #     print(self.prev - lstm_output[:, -1, :])
-        #     self.prev = lstm_output[:, -1, :]
-
-        out = self.fc(lstm_output[:, -1, :])
-        return out
-
-def train_model(model, training_loader, num_epochs=5, learning_rate=1e-4):
-    criterion = nn.MSELoss(reduction="sum")
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-    train_loss, valid_loss = [], []
-    train_acc, valid_acc = [], []
-    for epoch in trange(num_epochs):
-        for batch, data in enumerate(training_loader):
-            instructions, expected_output = data
-            instructions = instructions.float()
-
-            print(instructions.size())
-
-            instructions = instructions.to(device)
-            expected_output = expected_output.to(device)
-            
-            optimizer.zero_grad()
-            pred = model(instructions)
-            expected_output = expected_output.unsqueeze(dim=1)
-            loss = criterion(pred, expected_output)
-            loss.backward()
-            optimizer.step()
-            train_loss.append(float(loss))
-
-            if batch == 3:
-                print(pred)
-                print(expected_output)
-
-    plt.plot(train_loss)
-    plt.show()
-
-model = LSTM(21, 256)
+model = lstm_seq2seq(21, 256)
 model = model.to(device)
-train_model(model, data_loader, num_epochs=1, learning_rate=1e-2)
+model.train_model(dataset, 32, 1, 6)
 
 '''
 TODO: Create seq2seq model where the RNN predicts the output digits 
