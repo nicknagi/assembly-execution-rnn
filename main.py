@@ -1,4 +1,5 @@
 import random
+import torch
 
 # Simple assembly processor
 def execute_assembly(instructions):
@@ -31,21 +32,24 @@ def generate_assembly_instruction():
     source_reg_or_val = random.choice([str(value), source_reg])
     return instr + " " + source_reg_or_val + " " + destination_reg
 
+all_chars = ["A", "D", "S", "U", "B", "M", "O", "V", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "R", " ", "~"]
+
+def s_to_i(s):
+    instr_num = []
+    for char in s:
+        instr_num.append(all_chars.index(char))
+    return instr_num
+
 x,y = [], []
 for _ in range(10000):
     instructions = [generate_assembly_instruction() for _ in range(20)]
+
     result = execute_assembly(instructions)
+    result = torch.tensor(result)
+
+    instructions = "~".join(instructions)
+    instructions = s_to_i(instructions)
+    instructions = torch.nn.functional.one_hot(torch.tensor(instructions))
 
     x.append(instructions)
     y.append(result)
-
-all_chars = ["A", "D", "S", "U", "B", "M", "O", "V", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "R", " ", "~"]
-
-instructions = "~".join(["ADD 1 R4", "SUB 2 R4"]) + "~"
-print(instructions)
-
-instr_num = []
-for char in instructions:
-    instr_num.append(all_chars.index(char))
-
-print(instr_num)
