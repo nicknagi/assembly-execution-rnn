@@ -1,5 +1,7 @@
 import random
 import torch
+from torch.utils.data import TensorDataset
+from torch.utils.data.dataloader import DataLoader
 
 # Simple assembly processor
 def execute_assembly(instructions):
@@ -41,7 +43,7 @@ def s_to_i(s):
     return instr_num
 
 x,y = [], []
-for _ in range(10000):
+for _ in range(100):
     instructions = [generate_assembly_instruction() for _ in range(20)]
 
     result = execute_assembly(instructions)
@@ -53,3 +55,6 @@ for _ in range(10000):
 
     x.append(instructions)
     y.append(result)
+
+dataset = TensorDataset(torch.stack(x), torch.stack(y))
+data_loader = DataLoader(dataset, batch_size=32)
