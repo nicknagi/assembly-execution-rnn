@@ -4,6 +4,14 @@ from torch.utils.data import TensorDataset
 from torch.utils.data.dataloader import DataLoader
 import torch.nn as nn
 from matplotlib import pyplot as plt
+from tqdm import trange
+
+if torch.cuda.is_available():  
+  device = "cuda:0" 
+else:  
+  device = "cpu" 
+
+print(f"Running on {device}")
 
 # Simple assembly processor
 def execute_assembly(instructions):
@@ -46,7 +54,7 @@ def s_to_i(s):
 
 x,y = [], []
 for _ in range(1000):
-    instructions = [generate_assembly_instruction() for _ in range(20)]
+    instructions = [generate_assembly_instruction() for _ in range(250)]
 
     result = execute_assembly(instructions)
     result = torch.tensor(result, dtype=torch.float)
@@ -70,37 +78,42 @@ class LSTM(nn.Module):
         self.lstm = nn.LSTM(input_size, hidden_size, batch_first=True)
         self.fc = nn.Linear(hidden_size, 1)
 
-    def forward(self, input_data, hidden):
-        input_data = input_data.float()
-        lstm_output, _ = self.lstm(input_data, hidden)
+    def forward(self, input_data):
+        lstm_output, _ = self.lstm(input_data)
         out = self.fc(lstm_output[:, -1, :])
         return out
-    
-    def init_hidden(self, batch_size):
-        weight = next(self.parameters()).data
-        hidden = (weight.new(self.n_layers, batch_size, self.hidden_size).zero_(),
-                      weight.new(self.n_layers, batch_size, self.hidden_size).zero_())
-        return hidden
 
 def train_model(model, training_loader, num_epochs=5, learning_rate=1e-4):
     criterion = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.RMSprop(model.parameters(), lr=learning_rate)
     train_loss, valid_loss = [], []
     train_acc, valid_acc = [], []
-    for epoch in range(num_epochs):
-        h = model.init_hidden(batch_size = 32)
-        for instructions, expected_output in training_loader:
-            h = tuple([e.data for e in h])
+    for epoch in trange(num_epochs):
+        for batch, data in enumerate(training_loader):
+            instructions, expected_output = data
+            instructions = instructions.float()
+
+            instructions = instructions.to(device)
+            expected_output = expected_output.to(device)
+            
             optimizer.zero_grad()
-            pred = model(instructions, h)
+            pred = model(instructions)
             expected_output = expected_output.unsqueeze(dim=1)
             loss = criterion(pred, expected_output)
             loss.backward()
             optimizer.step()
             train_loss.append(float(loss))
 
+            # if batch == 3:
+            #     torch.set_printoptions(precision=10)
+            #     torch.set_printoptions(edgeitems=100)
+            #     print(loss)
+            #     print(pred)
+            #     print(expected_output)
+
     plt.plot(train_loss)
     plt.show()
 
-model = LSTM(21, 256)
-train_model(model, data_loader)
+model = LSTM(21, 8)
+model = model.to(device)
+train_model(model, data_loader, num_epochs=10, learning_rate=1e-1)
