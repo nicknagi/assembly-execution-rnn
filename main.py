@@ -11,6 +11,9 @@ if torch.cuda.is_available():
 else:  
   device = "cpu" 
 
+torch.set_printoptions(precision=10)
+torch.set_printoptions(edgeitems=100)
+
 print(f"Running on {device}")
 
 # Simple assembly processor
@@ -53,8 +56,8 @@ def s_to_i(s):
     return instr_num
 
 x,y = [], []
-for _ in range(10000):
-    instructions = [generate_assembly_instruction() for _ in range(100)]
+for _ in trange(10000):
+    instructions = [generate_assembly_instruction() for _ in range(random.randint(1,3))]
 
     result = execute_assembly(instructions)
     result = torch.tensor(result, dtype=torch.float)
@@ -66,25 +69,36 @@ for _ in range(10000):
     x.append(instructions)
     y.append(result)
 
-dataset = TensorDataset(torch.stack(x), torch.stack(y))
-data_loader = DataLoader(dataset, batch_size=64, drop_last=True)
+x = torch.nn.utils.rnn.pad_sequence(x, batch_first=True)
+y = torch.stack(y)
 
-class rnn(nn.Module):
+dataset = TensorDataset(x, y)
+data_loader = DataLoader(dataset, batch_size=128, drop_last=True)
+
+class LSTM(nn.Module):
     def __init__(self, input_size, hidden_size):
-        self.name = "rnn"
-        super(rnn, self).__init__()
+        self.name = "LSTM"
+        super(LSTM, self).__init__()
         self.hidden_size = hidden_size
         self.n_layers = 1
-        self.rnn = nn.RNN(input_size, hidden_size, batch_first=True)
+        self.LSTM = nn.LSTM(input_size, hidden_size, batch_first=True)
         self.fc = nn.Linear(hidden_size, 1)
+        self.prev = None
 
     def forward(self, input_data):
-        rnn_output, _ = self.rnn(input_data)
-        out = self.fc(rnn_output[:, -1, :])
+        lstm_output, _ = self.LSTM(input_data)
+
+        # if self.prev == None:
+        #     self.prev = lstm_output[:, -1, :]
+        # else:
+        #     print(self.prev - lstm_output[:, -1, :])
+        #     self.prev = lstm_output[:, -1, :]
+
+        out = self.fc(lstm_output[:, -1, :])
         return out
 
 def train_model(model, training_loader, num_epochs=5, learning_rate=1e-4):
-    criterion = nn.MSELoss()
+    criterion = nn.MSELoss(reduction="sum")
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     train_loss, valid_loss = [], []
     train_acc, valid_acc = [], []
@@ -92,6 +106,8 @@ def train_model(model, training_loader, num_epochs=5, learning_rate=1e-4):
         for batch, data in enumerate(training_loader):
             instructions, expected_output = data
             instructions = instructions.float()
+
+            print(instructions.size())
 
             instructions = instructions.to(device)
             expected_output = expected_output.to(device)
@@ -105,15 +121,17 @@ def train_model(model, training_loader, num_epochs=5, learning_rate=1e-4):
             train_loss.append(float(loss))
 
             if batch == 3:
-                torch.set_printoptions(precision=10)
-                torch.set_printoptions(edgeitems=100)
-                print(loss)
                 print(pred)
                 print(expected_output)
 
     plt.plot(train_loss)
     plt.show()
 
-model = rnn(21, 256)
+model = LSTM(21, 256)
 model = model.to(device)
-train_model(model, data_loader, num_epochs=5, learning_rate=1e-1)
+train_model(model, data_loader, num_epochs=1, learning_rate=1e-2)
+
+'''
+TODO: Create seq2seq model where the RNN predicts the output digits 
+TODO: When implementing seq2seq model ensure to use teacher-forcing, model aware of last t-1 samples for making prediction t
+'''
