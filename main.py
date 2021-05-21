@@ -59,7 +59,7 @@ for _ in range(10000):
     result = execute_assembly(instructions)
     result = torch.tensor(result, dtype=torch.float)
 
-    instructions = "~".join(instructions)
+    instructions = "~".join(instructions) + "~"
     instructions = s_to_i(instructions)
     instructions = torch.nn.functional.one_hot(torch.tensor(instructions))
 
