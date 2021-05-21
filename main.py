@@ -53,8 +53,8 @@ def s_to_i(s):
     return instr_num
 
 x,y = [], []
-for _ in range(1000):
-    instructions = [generate_assembly_instruction() for _ in range(250)]
+for _ in range(10000):
+    instructions = [generate_assembly_instruction() for _ in range(100)]
 
     result = execute_assembly(instructions)
     result = torch.tensor(result, dtype=torch.float)
@@ -67,25 +67,25 @@ for _ in range(1000):
     y.append(result)
 
 dataset = TensorDataset(torch.stack(x), torch.stack(y))
-data_loader = DataLoader(dataset, batch_size=32, drop_last=True)
+data_loader = DataLoader(dataset, batch_size=64, drop_last=True)
 
-class LSTM(nn.Module):
+class rnn(nn.Module):
     def __init__(self, input_size, hidden_size):
-        self.name = "LSTM"
-        super(LSTM, self).__init__()
+        self.name = "rnn"
+        super(rnn, self).__init__()
         self.hidden_size = hidden_size
         self.n_layers = 1
-        self.lstm = nn.LSTM(input_size, hidden_size, batch_first=True)
+        self.rnn = nn.RNN(input_size, hidden_size, batch_first=True)
         self.fc = nn.Linear(hidden_size, 1)
 
     def forward(self, input_data):
-        lstm_output, _ = self.lstm(input_data)
-        out = self.fc(lstm_output[:, -1, :])
+        rnn_output, _ = self.rnn(input_data)
+        out = self.fc(rnn_output[:, -1, :])
         return out
 
 def train_model(model, training_loader, num_epochs=5, learning_rate=1e-4):
     criterion = nn.MSELoss()
-    optimizer = torch.optim.RMSprop(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     train_loss, valid_loss = [], []
     train_acc, valid_acc = [], []
     for epoch in trange(num_epochs):
@@ -104,16 +104,16 @@ def train_model(model, training_loader, num_epochs=5, learning_rate=1e-4):
             optimizer.step()
             train_loss.append(float(loss))
 
-            # if batch == 3:
-            #     torch.set_printoptions(precision=10)
-            #     torch.set_printoptions(edgeitems=100)
-            #     print(loss)
-            #     print(pred)
-            #     print(expected_output)
+            if batch == 3:
+                torch.set_printoptions(precision=10)
+                torch.set_printoptions(edgeitems=100)
+                print(loss)
+                print(pred)
+                print(expected_output)
 
     plt.plot(train_loss)
     plt.show()
 
-model = LSTM(21, 8)
+model = rnn(21, 256)
 model = model.to(device)
-train_model(model, data_loader, num_epochs=10, learning_rate=1e-1)
+train_model(model, data_loader, num_epochs=5, learning_rate=1e-1)
