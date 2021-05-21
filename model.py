@@ -218,8 +218,7 @@ class lstm_seq2seq(nn.Module):
                                 decoder_input = decoder_output
                     batches += 1
 
-                    print(outputs.size())
-                    print(target.size())
+                    outputs = torch.transpose(outputs.squeeze(), 0, 1)
 
                     # compute the loss 
                     loss = criterion(outputs, target)

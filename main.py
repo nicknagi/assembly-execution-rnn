@@ -77,7 +77,7 @@ dataset = TensorDataset(x, y)
 
 model = lstm_seq2seq(21, 256)
 model = model.to(device)
-model.train_model(dataset, 32, 1, 6)
+model.train_model(train_dataset=dataset, batch_size=32, n_epochs=3, target_len=6)
 
 '''
 TODO: Create seq2seq model where the RNN predicts the output digits 
