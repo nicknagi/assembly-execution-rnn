@@ -33,11 +33,19 @@ def generate_assembly_instruction():
 
 x,y = [], []
 for _ in range(10000):
-    instructions = [generate_assembly_instruction() for _ in range(random.randint(3, 25))]
+    instructions = [generate_assembly_instruction() for _ in range(20)]
     result = execute_assembly(instructions)
 
     x.append(instructions)
     y.append(result)
 
-instructions = " <exec> ".join([generate_assembly_instruction() for _ in range(random.randint(3, 25))])
+all_chars = ["A", "D", "S", "U", "B", "M", "O", "V", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "R", " ", "~"]
+
+instructions = "~".join(["ADD 1 R4", "SUB 2 R4"]) + "~"
 print(instructions)
+
+instr_num = []
+for char in instructions:
+    instr_num.append(all_chars.index(char))
+
+print(instr_num)
