@@ -25,7 +25,7 @@ def execute_assembly(instructions):
 # Generate a random assembly instruction
 def generate_assembly_instruction():
     instr = random.choice(["ADD", "SUB", "MOV"])
-    value = random.randint(0, 1000)
+    value = random.randint(10, 99)
     destination_reg = "R" + str(random.randint(1,5))
     source_reg = "R" + str(random.randint(0,5))
     
