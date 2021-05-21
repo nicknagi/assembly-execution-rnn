@@ -179,7 +179,6 @@ class lstm_seq2seq(nn.Module):
                     encoder_output, encoder_hidden = self.encoder(code)
 
                     # decoder with teacher forcing
-                    decoder_input = code[:, -1, :]   # shape: (batch_size, input_size)
                     decoder_input = torch.zeros((batch_size, 1)).to(device)
                     decoder_hidden = encoder_hidden
 
@@ -196,7 +195,7 @@ class lstm_seq2seq(nn.Module):
                             for t in range(target_len): 
                                 decoder_output, decoder_hidden = self.decoder(decoder_input, decoder_hidden)
                                 outputs[t] = decoder_output
-                                decoder_input = target[:,t, :]
+                                decoder_input = (target[:,t]).unsqueeze(-1)
 
                         # predict recursively 
                         else:
@@ -213,7 +212,7 @@ class lstm_seq2seq(nn.Module):
                             
                             # predict with teacher forcing
                             if random.random() < teacher_forcing_ratio:
-                                decoder_input = target[:, t, :]
+                                decoder_input = (target[:,t]).unsqueeze(-1)
                             
                             # predict recursively 
                             else:
@@ -240,7 +239,6 @@ class lstm_seq2seq(nn.Module):
 
                 # progress bar 
                 tr.set_postfix(loss="{0:.3f}".format(batch_loss))
-        print(losses)
         return losses
 
     def predict(self, input_tensor, target_len):
@@ -252,14 +250,16 @@ class lstm_seq2seq(nn.Module):
         '''
 
         # encode input_tensor
-        input_tensor = input_tensor.unsqueeze(1)     # add in batch size of 1
+        input_tensor = input_tensor.unsqueeze(0)     # add in batch size of 1
+        input_tensor = input_tensor.float()
+        input_tensor = input_tensor.to(device)
         encoder_output, encoder_hidden = self.encoder(input_tensor)
 
         # initialize tensor for predictions
-        outputs = torch.zeros(target_len, input_tensor.shape[2])
+        outputs = torch.zeros(target_len, 1)
 
         # decode input_tensor
-        decoder_input = input_tensor[-1, :, :]
+        decoder_input = torch.zeros((1, 1)).to(device)
         decoder_hidden = encoder_hidden
         
         for t in range(target_len):
@@ -267,6 +267,6 @@ class lstm_seq2seq(nn.Module):
             outputs[t] = decoder_output.squeeze(0)
             decoder_input = decoder_output
             
-        np_outputs = outputs.detach().numpy()
+        result = outputs.detach()
         
-        return np_outputs
+        return result

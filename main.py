@@ -56,31 +56,44 @@ def s_to_i(s):
         instr_num.append(all_chars.index(char))
     return instr_num
 
-x,y = [], []
-for _ in trange(10000):
-    instructions = [generate_assembly_instruction() for _ in range(random.randint(1,50))]
+def create_dataset(num_samples=10000):
+    x,y = [], []
+    for _ in trange(num_samples):
+        instructions = [generate_assembly_instruction() for _ in range(random.randint(1,50))]
 
-    result = execute_assembly(instructions)
-    result = torch.tensor(result, dtype=torch.float)
+        result = execute_assembly(instructions)
+        result = torch.tensor(result, dtype=torch.float)
 
-    instructions = "~".join(instructions) + "~"
-    instructions = s_to_i(instructions)
-    instructions = torch.nn.functional.one_hot(torch.tensor(instructions))
+        instructions = "~".join(instructions) + "~"
+        instructions = s_to_i(instructions)
+        instructions = torch.nn.functional.one_hot(torch.tensor(instructions))
 
-    x.append(instructions)
-    y.append(result)
+        x.append(instructions)
+        y.append(result)
 
-x = torch.nn.utils.rnn.pad_sequence(x, batch_first=True)
-y = torch.stack(y)
+    x = torch.nn.utils.rnn.pad_sequence(x, batch_first=True)
+    y = torch.stack(y)
+    return x, y
 
-dataset = TensorDataset(x, y)
+train_x, train_y = create_dataset(num_samples=10000)
+train_dataset = TensorDataset(train_x, train_y)
 
 model = lstm_seq2seq(21, 256)
 model = model.to(device)
-training_loss = model.train_model(train_dataset=dataset, batch_size=32, n_epochs=10, target_len=6)
+training_loss = model.train_model(train_dataset=train_dataset, batch_size=32, n_epochs=10, target_len=6, training_prediction="teacher_forcing")
+# print(training_loss)
 
 plt.plot(training_loss)
 plt.show()
+
+# ---------------------- Validation ---------------------
+val_x, val_y = create_dataset(num_samples=1000)
+
+for i in range(val_x.size()[0]):
+    pred = model.predict(val_x[i], target_len=6)
+    print(pred, val_y[i])
+    if i == 4:
+        break
 
 '''
 TODO: Create seq2seq model where the RNN predicts the output digits 
