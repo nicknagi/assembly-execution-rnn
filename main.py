@@ -83,7 +83,7 @@ def create_dataset(num_samples=10000):
                             for _ in range(random.randint(1,2))]
 
             result = execute_assembly(instructions)
-            legal = result[random.randint(1,5)] != 0 and result[random.randint(1,5)] != 0
+            legal = sum(result) != 0
         
         target = convert_registers_to_one_hot(result)
 

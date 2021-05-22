@@ -8,6 +8,9 @@ import torch.nn as nn
 from torch import optim
 import torch.nn.functional as F
 from torch.utils.data.dataloader import DataLoader
+from datetime import datetime
+import os
+
 
 if torch.cuda.is_available():
     device = "cuda:0"
@@ -82,6 +85,11 @@ class lstm_seq2seq(nn.Module):
 
         optimizer = optim.SGD(self.parameters(), lr=learning_rate, momentum=0.9)
         criterion = nn.CrossEntropyLoss()
+
+        # Make checkpointing directory
+        now = datetime.now()
+        dir_name = now.strftime("%d %B %H:%M")
+        os.mkdir(f"models/{dir_name}")
 
         with trange(n_epochs) as tr:
             for it in tr:
@@ -188,8 +196,8 @@ class lstm_seq2seq(nn.Module):
                 val_losses.append(validation_loss)
 
                 # Checkpoint model
-                if it % 5 == 0:
-                    torch.save(self.state_dict(), f"models/bs_{batch_size}_epochs_{it}_lr_{learning_rate}_valloss_{validation_loss}")
+                if it % 5 == 0 or it == n_epochs-1:
+                    torch.save(self.state_dict(), f"models/{dir_name}/bs_{batch_size}_epochs_{it}_lr_{learning_rate}_valloss_{validation_loss}")
 
         return losses, val_losses
 
