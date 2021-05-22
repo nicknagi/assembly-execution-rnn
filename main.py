@@ -80,7 +80,7 @@ def create_dataset(num_samples=10000):
         result = None
         while not legal:
             instructions = [generate_assembly_instruction()
-                            for _ in range(random.randint(1, 10))]
+                            for _ in range(random.randint(1,2))]
 
             result = execute_assembly(instructions)
             legal = result[random.randint(1,5)] != 0 and result[random.randint(1,5)] != 0
@@ -99,7 +99,7 @@ def create_dataset(num_samples=10000):
     return x, y
 
 
-train_x, train_y = create_dataset(num_samples=100000)
+train_x, train_y = create_dataset(num_samples=25000)
 val_x, val_y = create_dataset(num_samples=1000)
 
 train_dataset = TensorDataset(train_x, train_y)
@@ -108,10 +108,10 @@ validation_dataset = TensorDataset(val_x, val_y)
 model = lstm_seq2seq(len(all_chars), 512)
 model = model.to(device)
 
-init_validation_loss = model.calculate_loss(validation_dataset, val_y.size()[1])[1]
+init_validation_loss = model.calculate_loss(validation_dataset)[1]
 
-training_loss, validation_loss = model.train_model(train_dataset=train_dataset, batch_size=128, n_epochs=10, target_len=train_y.size()[1],
- validation_dataset=validation_dataset, training_prediction="teacher_forcing", learning_rate=0.005)
+training_loss, validation_loss = model.train_model(train_dataset=train_dataset, batch_size=128, n_epochs=100, target_len=train_y.size()[1],
+ validation_dataset=validation_dataset, training_prediction="teacher_forcing", learning_rate=0.01)
 
 validation_loss.insert(0, init_validation_loss)
 plt.plot(validation_loss)

@@ -184,12 +184,12 @@ class lstm_seq2seq(nn.Module):
 
                 # progress bar
                 tr.set_postfix(loss="{0:.3f}".format(batch_loss))
-                val_losses.append(self.calculate_loss(validation_dataset, self.input_size)[1])
+                val_losses.append(self.calculate_loss(validation_dataset)[1])
 
         return losses, val_losses
 
     @torch.no_grad()
-    def calculate_loss(self, dataset, target_len):
+    def calculate_loss(self, dataset):
         data_loader = DataLoader(dataset, batch_size=32, drop_last=True)
         criterion = nn.CrossEntropyLoss()
 
@@ -199,6 +199,8 @@ class lstm_seq2seq(nn.Module):
         for i, data in enumerate(data_loader):
             batches += 1
             input_tensor, target_tensor = data
+
+            target_len = target_tensor.size()[1]
 
             # encode input_tensor
             input_tensor = input_tensor.float()
@@ -255,7 +257,7 @@ class lstm_seq2seq(nn.Module):
 
         pred = ""
 
-        for _ in range(10):
+        for _ in range(20):
             decoder_output, decoder_hidden = self.decoder(
                     decoder_input, decoder_hidden)
             decoder_input = decoder_output
