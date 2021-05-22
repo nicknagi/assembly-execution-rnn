@@ -119,6 +119,7 @@ class lstm_seq2seq(nn.Module):
         # initialize array of losses
         losses = np.full(n_epochs, np.nan)
         val_losses = []
+        granular_loss = []
 
         train_loader = DataLoader(
             train_dataset, batch_size=batch_size, drop_last=True)
@@ -214,6 +215,7 @@ class lstm_seq2seq(nn.Module):
                         loss += criterion(output_argmax, target_argmax)
 
                     batch_loss += loss.item()
+                    granular_loss.append(loss.item())
 
                     # backpropagation
                     loss.backward()
@@ -230,10 +232,9 @@ class lstm_seq2seq(nn.Module):
 
                 # progress bar
                 tr.set_postfix(loss="{0:.3f}".format(batch_loss))
-                # val_losses.append(self.calculate_loss(
-                #     validation_dataset, self.input_size)[1])
+                val_losses.append(self.calculate_loss(validation_dataset, self.input_size)[1])
 
-        return losses, val_losses
+        return granular_loss, val_losses
 
     @torch.no_grad()
     def calculate_loss(self, dataset, target_len):
@@ -244,6 +245,8 @@ class lstm_seq2seq(nn.Module):
         '''
 
         train_loader = DataLoader(dataset, batch_size=32, drop_last=True)
+        criterion = nn.CrossEntropyLoss()
+
         batches = 0
         loss = 0
         results = []
@@ -258,13 +261,13 @@ class lstm_seq2seq(nn.Module):
             batch_size = input_tensor.size()[0]
 
             # initialize tensor for predictions
-            outputs = torch.zeros(target_len, batch_size, 1)
+            outputs = torch.zeros(target_len, batch_size, self.input_size)
 
             # initialize hidden state
             encoder_output, encoder_hidden = self.encoder(input_tensor)
 
             # decode input_tensor
-            decoder_input = torch.zeros(batch_size, 1).to(device)
+            decoder_input = torch.zeros(batch_size, self.input_size).to(device)
             decoder_hidden = encoder_hidden
 
             for t in range(target_len):
@@ -273,14 +276,18 @@ class lstm_seq2seq(nn.Module):
                 outputs[t] = decoder_output
                 decoder_input = decoder_output
 
-            outputs = torch.transpose(outputs.squeeze(), 0, 1).to(device)
-            outputs_np = outputs.cpu().numpy()
-            target_np = target_tensor.numpy()
+            outputs = torch.transpose(outputs, 0, 1).to(device)
 
-            loss += np.sum(np.absolute(target_np - outputs_np), axis = (1,0))
+            batch_loss = 0
+            for i in range(target_len):
+                output_argmax = outputs[:,i,:]
+                target_argmax = torch.argmax(target_tensor[:,i,:], dim=1).long().to(device)
+                batch_loss += criterion(output_argmax, target_argmax)
+            
+            loss += batch_loss.item()
             results.append(outputs.detach())
 
-        # loss /= batches
+        loss /= batches
         result = torch.stack(results)
 
         return result, loss

@@ -105,11 +105,16 @@ validation_dataset = TensorDataset(val_x, val_y)
 
 model = lstm_seq2seq(len(all_chars), 128)
 model = model.to(device)
+
+# TEST
+print(f"Initial validation loss is: {model.calculate_loss(validation_dataset, val_y.size()[1])[1]}")
+
 training_loss, validation_loss = model.train_model(train_dataset=train_dataset, batch_size=64, n_epochs=5, target_len=train_y.size()[1], validation_dataset=validation_dataset,
                                                    training_prediction="recursive")
 
-print(training_loss, validation_loss)
 plt.plot(training_loss)
+plt.show()
+
 plt.plot(validation_loss)
 plt.show()
 
