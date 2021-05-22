@@ -81,7 +81,7 @@ class lstm_seq2seq(nn.Module):
         granular_loss = []
 
         train_loader = DataLoader(
-            train_dataset, batch_size=batch_size, drop_last=True)
+            train_dataset, batch_size=batch_size, drop_last=True, shuffle=True)
 
         optimizer = optim.SGD(self.parameters(), lr=learning_rate, momentum=0.9)
         criterion = nn.CrossEntropyLoss()
