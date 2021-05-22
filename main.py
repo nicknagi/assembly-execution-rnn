@@ -55,7 +55,7 @@ def generate_assembly_instruction():
 
 
 all_chars = ["A", "D", "S", "U", "B", "M", "O", "V", "1", "2",
-             "3", "4", "5", "6", "7", "8", "9", "0", "R", " ", "~"]
+             "3", "4", "5", "6", "7", "8", "9", "0", "R", " ", "-", "~"]
 
 
 def s_to_i(s):
@@ -76,7 +76,14 @@ def create_dataset(num_samples=10000):
 
             result = execute_assembly(instructions)
             legal = result[random.randint(1,5)] != 0 and result[random.randint(1,5)] != 0
-        result = torch.tensor(result, dtype=torch.float)
+        
+        result_string = ""
+        for register in result:
+            result_string += str(register)
+            result_string += " "
+        result_string += "~"
+        result_numerical = s_to_i(result_string)
+        result = torch.nn.functional.one_hot(torch.tensor(result_numerical))
 
         instructions = "~".join(instructions) + "~"
         instructions = s_to_i(instructions)
@@ -86,7 +93,7 @@ def create_dataset(num_samples=10000):
         y.append(result)
 
     x = torch.nn.utils.rnn.pad_sequence(x, batch_first=True)
-    y = torch.stack(y)
+    y = torch.nn.utils.rnn.pad_sequence(y, batch_first=True)
     return x, y
 
 
@@ -96,17 +103,19 @@ val_x, val_y = create_dataset(num_samples=1000)
 train_dataset = TensorDataset(train_x, train_y)
 validation_dataset = TensorDataset(val_x, val_y)
 
-model = lstm_seq2seq(21, 128)
-model = model.to(device)
-training_loss, validation_loss = model.train_model(train_dataset=train_dataset, batch_size=64, n_epochs=5, target_len=6, validation_dataset=validation_dataset,
-                                                   training_prediction="recursive")
+print(val_x.size())
 
+model = lstm_seq2seq(len(all_chars), 128)
+model = model.to(device)
+training_loss, validation_loss = model.train_model(train_dataset=train_dataset, batch_size=64, n_epochs=5, target_len=train_y.size()[1], validation_dataset=validation_dataset,
+                                                   training_prediction="recursive", learning_rate=0.5)
+
+print(training_loss, validation_loss)
 plt.plot(training_loss)
 plt.plot(validation_loss)
 plt.show()
 
 '''
-# TODO: Verify L1 loss calculation correct between pytorch and my numpy implementation, Try L2 Loss
-# TODO: Think about lines 74 to 78 and if they make sense
+# TODO: Try decoder predicting one hot sequences until eos predicted
 # TODO: Instead of assembly try text generation using some random dataset -- this seems the best!
 '''

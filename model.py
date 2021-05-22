@@ -111,7 +111,7 @@ class lstm_seq2seq(nn.Module):
 
         self.encoder = lstm_encoder(
             input_size=input_size, hidden_size=hidden_size)
-        self.decoder = lstm_decoder(input_size=1, hidden_size=hidden_size)
+        self.decoder = lstm_decoder(input_size=input_size, hidden_size=hidden_size)
 
     def train_model(self, train_dataset, batch_size, n_epochs, target_len, validation_dataset, training_prediction='recursive',
                     teacher_forcing_ratio=0.5, learning_rate=0.01, dynamic_tf=False):
@@ -124,7 +124,7 @@ class lstm_seq2seq(nn.Module):
             train_dataset, batch_size=batch_size, drop_last=True)
 
         optimizer = optim.Adam(self.parameters(), lr=learning_rate)
-        criterion = nn.MSELoss(reduction="sum")
+        criterion = nn.NLLLoss()
 
         with trange(n_epochs) as tr:
             for it in tr:
@@ -144,7 +144,7 @@ class lstm_seq2seq(nn.Module):
                     target = target.to(device)
 
                     # outputs tensor
-                    outputs = torch.zeros(target_len, batch_size, 1)
+                    outputs = torch.zeros(target_len, batch_size, self.input_size)
 
                     # initialize hidden state
                     encoder_hidden = self.encoder.init_hidden(batch_size)
@@ -156,7 +156,7 @@ class lstm_seq2seq(nn.Module):
                     encoder_output, encoder_hidden = self.encoder(code)
 
                     # decoder with teacher forcing
-                    decoder_input = torch.zeros((batch_size, 1)).to(device)
+                    decoder_input = torch.zeros((batch_size, self.input_size)).to(device)
                     decoder_hidden = encoder_hidden
 
                     if training_prediction == 'recursive':
@@ -215,10 +215,10 @@ class lstm_seq2seq(nn.Module):
                     loss.backward()
                     optimizer.step()
 
-                # loss for epoch
+                # # loss for epoch
                 batch_loss /= batches
-                # losses[it] = batch_loss
-                losses[it] = self.calculate_loss(train_dataset, 6)[1]  # TEMP DELETE LATER
+                losses[it] = batch_loss
+                # losses[it] = self.calculate_loss(train_dataset, self.input_size)[1]  # TEMP DELETE LATER
 
                 # dynamic teacher forcing
                 if dynamic_tf and teacher_forcing_ratio > 0:
@@ -226,8 +226,8 @@ class lstm_seq2seq(nn.Module):
 
                 # progress bar
                 tr.set_postfix(loss="{0:.3f}".format(batch_loss))
-                val_losses.append(self.calculate_loss(
-                    validation_dataset, 6)[1])
+                # val_losses.append(self.calculate_loss(
+                #     validation_dataset, self.input_size)[1])
 
         return losses, val_losses
 
@@ -272,10 +272,11 @@ class lstm_seq2seq(nn.Module):
             outputs = torch.transpose(outputs.squeeze(), 0, 1).to(device)
             outputs_np = outputs.cpu().numpy()
             target_np = target_tensor.numpy()
-            loss += np.sum(np.absolute(target_np - outputs_np))
+
+            loss += np.sum(np.absolute(target_np - outputs_np), axis = (1,0))
             results.append(outputs.detach())
 
-        loss /= batches
+        # loss /= batches
         result = torch.stack(results)
 
         return result, loss
