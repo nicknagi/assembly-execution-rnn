@@ -80,7 +80,7 @@ class lstm_seq2seq(nn.Module):
         train_loader = DataLoader(
             train_dataset, batch_size=batch_size, drop_last=True)
 
-        optimizer = optim.SGD(self.parameters(), lr=learning_rate)
+        optimizer = optim.SGD(self.parameters(), lr=learning_rate, momentum=0.9)
         criterion = nn.CrossEntropyLoss()
 
         with trange(n_epochs) as tr:
