@@ -127,9 +127,8 @@ class lstm_seq2seq(nn.Module):
         criterion = nn.MSELoss(reduction="sum")
 
         with trange(n_epochs) as tr:
-            batches = 0
             for it in tr:
-
+                batches = 0
                 batch_loss = 0.
                 batch_loss_tf = 0.
                 batch_loss_no_tf = 0.
@@ -204,8 +203,8 @@ class lstm_seq2seq(nn.Module):
                     outputs = torch.transpose(
                         outputs.squeeze(), 0, 1).to(device)
 
-                    if i == 5:
-                        print(outputs[0], target[0])
+                    # if i == 5:
+                    #     print(outputs[0], target[0])
 
                     # compute the loss
                     loss = criterion(outputs, target)
