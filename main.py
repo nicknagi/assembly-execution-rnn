@@ -103,12 +103,10 @@ val_x, val_y = create_dataset(num_samples=1000)
 train_dataset = TensorDataset(train_x, train_y)
 validation_dataset = TensorDataset(val_x, val_y)
 
-print(val_x.size())
-
 model = lstm_seq2seq(len(all_chars), 128)
 model = model.to(device)
 training_loss, validation_loss = model.train_model(train_dataset=train_dataset, batch_size=64, n_epochs=5, target_len=train_y.size()[1], validation_dataset=validation_dataset,
-                                                   training_prediction="recursive", learning_rate=0.5)
+                                                   training_prediction="recursive")
 
 print(training_loss, validation_loss)
 plt.plot(training_loss)

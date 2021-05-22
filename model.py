@@ -124,7 +124,7 @@ class lstm_seq2seq(nn.Module):
             train_dataset, batch_size=batch_size, drop_last=True)
 
         optimizer = optim.Adam(self.parameters(), lr=learning_rate)
-        criterion = nn.NLLLoss()
+        criterion = nn.CrossEntropyLoss()
 
         with trange(n_epochs) as tr:
             for it in tr:
@@ -207,7 +207,11 @@ class lstm_seq2seq(nn.Module):
                     #     print(outputs[0], target[0])
 
                     # compute the loss
-                    loss = criterion(outputs, target)
+                    loss = 0
+                    for i in range(target_len):
+                        output_argmax = outputs[:,i,:]
+                        target_argmax = torch.argmax(target[:,i,:], dim=1).long()
+                        loss += criterion(output_argmax, target_argmax)
 
                     batch_loss += loss.item()
 
