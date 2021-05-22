@@ -117,7 +117,7 @@ class lstm_seq2seq(nn.Module):
         self.decoder = lstm_decoder(input_size = 1, hidden_size = hidden_size)
 
 
-    def train_model(self, train_dataset, batch_size, n_epochs, target_len, training_prediction = 'recursive', teacher_forcing_ratio = 0.5, learning_rate = 0.01, dynamic_tf = False):
+    def train_model(self, train_dataset, batch_size, n_epochs, target_len, validation_dataset, training_prediction = 'recursive', teacher_forcing_ratio = 0.5, learning_rate = 0.01, dynamic_tf = False):
         
         '''
         train lstm encoder-decoder
@@ -142,11 +142,12 @@ class lstm_seq2seq(nn.Module):
     
         # initialize array of losses 
         losses = np.full(n_epochs, np.nan)
+        val_losses = []
 
         train_loader = DataLoader(train_dataset, batch_size=batch_size, drop_last=True)
 
         optimizer = optim.Adam(self.parameters(), lr = learning_rate)
-        criterion = nn.MSELoss() # TODO: Change for categorical
+        criterion = nn.L1Loss(reduction="sum")
 
         with trange(n_epochs) as tr:
             batches = 0
@@ -223,6 +224,7 @@ class lstm_seq2seq(nn.Module):
 
                     # compute the loss 
                     loss = criterion(outputs, target)
+
                     batch_loss += loss.item()
                     
                     # backpropagation
@@ -239,9 +241,12 @@ class lstm_seq2seq(nn.Module):
 
                 # progress bar 
                 tr.set_postfix(loss="{0:.3f}".format(batch_loss))
-        return losses
+                val_losses.append(self.calculate_loss(validation_dataset, 6)[1])
+                
+        return losses, val_losses
 
-    def predict(self, input_tensor, target_len):
+    @torch.no_grad()
+    def calculate_loss(self, dataset, target_len):
         
         '''
         : param input_tensor:      input data (seq_len, input_size); PyTorch tensor 
@@ -249,24 +254,42 @@ class lstm_seq2seq(nn.Module):
         : return np_outputs:       np.array containing predicted values; prediction done recursively 
         '''
 
-        # encode input_tensor
-        input_tensor = input_tensor.unsqueeze(0)     # add in batch size of 1
-        input_tensor = input_tensor.float()
-        input_tensor = input_tensor.to(device)
-        encoder_output, encoder_hidden = self.encoder(input_tensor)
+        train_loader = DataLoader(dataset, batch_size=32, drop_last=True)
+        batches = 0
+        loss = 0
+        results = []
+        for i, data in enumerate(train_loader):
+            batches += 1
+            input_tensor, target_tensor = data
 
-        # initialize tensor for predictions
-        outputs = torch.zeros(target_len, 1)
+            # encode input_tensor
+            input_tensor = input_tensor.float()
+            input_tensor = input_tensor.to(device)
 
-        # decode input_tensor
-        decoder_input = torch.zeros((1, 1)).to(device)
-        decoder_hidden = encoder_hidden
-        
-        for t in range(target_len):
-            decoder_output, decoder_hidden = self.decoder(decoder_input, decoder_hidden)
-            outputs[t] = decoder_output.squeeze(0)
-            decoder_input = decoder_output
+            batch_size = input_tensor.size()[0]
+
+            # initialize tensor for predictions
+            outputs = torch.zeros(target_len, batch_size, 1)
             
-        result = outputs.detach()
+            # initialize hidden state
+            encoder_output, encoder_hidden = self.encoder(input_tensor)
+
+            # decode input_tensor
+            decoder_input = torch.zeros(batch_size, 1).to(device)
+            decoder_hidden = encoder_hidden
+            
+            for t in range(target_len):
+                decoder_output, decoder_hidden = self.decoder(decoder_input, decoder_hidden)
+                outputs[t] = decoder_output
+                decoder_input = decoder_output
+            
+            outputs = torch.transpose(outputs.squeeze(), 0, 1).to(device)
+            outputs_np = outputs.cpu().numpy()
+            target_np = target_tensor.numpy()
+            loss += np.sum(np.absolute(target_np - outputs_np))
+            results.append(outputs.detach())
+
+        loss /= batches
+        result = torch.stack(results)
         
-        return result
+        return result, loss

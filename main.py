@@ -6,6 +6,7 @@ import torch.nn as nn
 from matplotlib import pyplot as plt
 from tqdm import trange
 from model import lstm_seq2seq
+import numpy as np
 
 if torch.cuda.is_available():  
   device = "cuda:0" 
@@ -59,7 +60,7 @@ def s_to_i(s):
 def create_dataset(num_samples=10000):
     x,y = [], []
     for _ in trange(num_samples):
-        instructions = [generate_assembly_instruction() for _ in range(random.randint(1,50))]
+        instructions = [generate_assembly_instruction() for _ in range(random.randint(1,10))]
 
         result = execute_assembly(instructions)
         result = torch.tensor(result, dtype=torch.float)
@@ -75,27 +76,17 @@ def create_dataset(num_samples=10000):
     y = torch.stack(y)
     return x, y
 
-train_x, train_y = create_dataset(num_samples=10000)
-train_dataset = TensorDataset(train_x, train_y)
-
-model = lstm_seq2seq(21, 256)
-model = model.to(device)
-training_loss = model.train_model(train_dataset=train_dataset, batch_size=32, n_epochs=10, target_len=6, training_prediction="teacher_forcing")
-# print(training_loss)
-
-plt.plot(training_loss)
-plt.show()
-
-# ---------------------- Validation ---------------------
+train_x, train_y = create_dataset(num_samples=40000)
 val_x, val_y = create_dataset(num_samples=1000)
 
-for i in range(val_x.size()[0]):
-    pred = model.predict(val_x[i], target_len=6)
-    print(pred, val_y[i])
-    if i == 4:
-        break
+train_dataset = TensorDataset(train_x, train_y)
+validation_dataset = TensorDataset(val_x, val_y)
 
-'''
-TODO: Create seq2seq model where the RNN predicts the output digits 
-TODO: When implementing seq2seq model ensure to use teacher-forcing, model aware of last t-1 samples for making prediction t
-'''
+model = lstm_seq2seq(21, 128)
+model = model.to(device)
+training_loss, validation_loss = model.train_model(train_dataset=train_dataset, batch_size=64, n_epochs=5, target_len=6, validation_dataset=validation_dataset,
+ training_prediction="recursive")
+
+plt.plot(training_loss)
+plt.plot(validation_loss)
+plt.show()
