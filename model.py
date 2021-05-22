@@ -216,8 +216,7 @@ class lstm_seq2seq(nn.Module):
                 # loss for epoch
                 batch_loss /= batches
                 # losses[it] = batch_loss
-                losses[it] = self.calculate_loss(train_dataset, 6)[
-                    1]  # TEMP DELETE LATER
+                losses[it] = self.calculate_loss(train_dataset, 6)[1]  # TEMP DELETE LATER
 
                 # dynamic teacher forcing
                 if dynamic_tf and teacher_forcing_ratio > 0:
