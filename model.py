@@ -66,8 +66,8 @@ class lstm_seq2seq(nn.Module):
         self.hidden_size = hidden_size
 
         self.encoder = lstm_encoder(
-            input_size=input_size, hidden_size=hidden_size)
-        self.decoder = lstm_decoder(input_size=input_size, hidden_size=hidden_size)
+            input_size=input_size, hidden_size=hidden_size, num_layers=2)
+        self.decoder = lstm_decoder(input_size=input_size, hidden_size=hidden_size, num_layers=2)
 
     def train_model(self, train_dataset, batch_size, n_epochs, target_len, validation_dataset, training_prediction='recursive',
                     teacher_forcing_ratio=0.5, learning_rate=0.01, dynamic_tf=False):
@@ -80,7 +80,7 @@ class lstm_seq2seq(nn.Module):
         train_loader = DataLoader(
             train_dataset, batch_size=batch_size, drop_last=True)
 
-        optimizer = optim.Adam(self.parameters(), lr=learning_rate)
+        optimizer = optim.SGD(self.parameters(), lr=learning_rate)
         criterion = nn.CrossEntropyLoss()
 
         with trange(n_epochs) as tr:
@@ -186,17 +186,17 @@ class lstm_seq2seq(nn.Module):
                 tr.set_postfix(loss="{0:.3f}".format(batch_loss))
                 val_losses.append(self.calculate_loss(validation_dataset, self.input_size)[1])
 
-        return granular_loss, val_losses
+        return losses, val_losses
 
     @torch.no_grad()
     def calculate_loss(self, dataset, target_len):
-        train_loader = DataLoader(dataset, batch_size=32, drop_last=True)
+        data_loader = DataLoader(dataset, batch_size=32, drop_last=True)
         criterion = nn.CrossEntropyLoss()
 
         batches = 0
         loss = 0
         results = []
-        for i, data in enumerate(train_loader):
+        for i, data in enumerate(data_loader):
             batches += 1
             input_tensor, target_tensor = data
 
@@ -237,12 +237,12 @@ class lstm_seq2seq(nn.Module):
         result = torch.stack(results)
 
         return result, loss
-
-    def predict(self, input_tensor, character_map, termination_char):
+    
+    @torch.no_grad()
+    def predict(self, input_tensor, character_map, termination_char, temperature):
+        from torch.distributions import Categorical
         input_tensor = input_tensor.unsqueeze(0)
         input_tensor = input_tensor.float().to(device)
-
-        outputs = []
 
         # initialize hidden state
         encoder_output, encoder_hidden = self.encoder(input_tensor)
@@ -258,10 +258,9 @@ class lstm_seq2seq(nn.Module):
         for _ in range(10):
             decoder_output, decoder_hidden = self.decoder(
                     decoder_input, decoder_hidden)
-            outputs.append(decoder_output)
             decoder_input = decoder_output
 
-            char_index = torch.argmax(softmax(decoder_output), dim=1).cpu().numpy()[0]
+            char_index = torch.multinomial(softmax(decoder_output/temperature), 1)[0].cpu().numpy()[0]
             char_pred = character_map[char_index]
             pred += char_pred
 
