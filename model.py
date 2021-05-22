@@ -124,7 +124,7 @@ class lstm_seq2seq(nn.Module):
             train_dataset, batch_size=batch_size, drop_last=True)
 
         optimizer = optim.Adam(self.parameters(), lr=learning_rate)
-        criterion = nn.L1Loss(reduction="sum")
+        criterion = nn.MSELoss(reduction="sum")
 
         with trange(n_epochs) as tr:
             batches = 0

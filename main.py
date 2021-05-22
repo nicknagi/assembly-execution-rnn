@@ -72,7 +72,7 @@ def create_dataset(num_samples=10000):
         result = None
         while not legal:
             instructions = [generate_assembly_instruction()
-                            for _ in range(random.randint(1, 10))]
+                            for _ in range(random.randint(1, 20))]
 
             result = execute_assembly(instructions)
             legal = result[random.randint(1,5)] != 0 and result[random.randint(1,5)] != 0
@@ -98,9 +98,15 @@ validation_dataset = TensorDataset(val_x, val_y)
 
 model = lstm_seq2seq(21, 128)
 model = model.to(device)
-training_loss, validation_loss = model.train_model(train_dataset=train_dataset, batch_size=64, n_epochs=100, target_len=6, validation_dataset=validation_dataset,
+training_loss, validation_loss = model.train_model(train_dataset=train_dataset, batch_size=64, n_epochs=5, target_len=6, validation_dataset=validation_dataset,
                                                    training_prediction="recursive")
 
 plt.plot(training_loss)
 plt.plot(validation_loss)
 plt.show()
+
+'''
+# TODO: Verify L1 loss calculation correct between pytorch and my numpy implementation, Try L2 Loss
+# TODO: Think about lines 74 to 78 and if they make sense
+# TODO: Instead of assembly try text generation using some random dataset -- this seems the best!
+'''
