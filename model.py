@@ -16,16 +16,8 @@ else:
 
 
 class lstm_encoder(nn.Module):
-    ''' Encodes time-series sequence '''
 
     def __init__(self, input_size, hidden_size, num_layers=1):
-        '''
-        : param input_size:     the number of features in the input X
-        : param hidden_size:    the number of features in the hidden state h
-        : param num_layers:     number of recurrent layers (i.e., 2 means there are
-        :                       2 stacked LSTMs)
-        '''
-
         super(lstm_encoder, self).__init__()
         self.input_size = input_size
         self.hidden_size = hidden_size
@@ -36,39 +28,18 @@ class lstm_encoder(nn.Module):
                             num_layers=num_layers, batch_first=True)
 
     def forward(self, x_input):
-        '''
-        : param x_input:               input of shape (seq_len, # in batch, input_size)
-        : return lstm_out, hidden:     lstm_out gives all the hidden states in the sequence;
-        :                              hidden gives the hidden state and cell state for the last
-        :                              element in the sequence 
-        '''
-
         lstm_out, self.hidden = self.lstm(x_input)
 
         return lstm_out, self.hidden
 
     def init_hidden(self, batch_size):
-        '''
-        initialize hidden state
-        : param batch_size:    x_input.shape[1]
-        : return:              zeroed hidden state and cell state 
-        '''
-
         return (torch.zeros(batch_size, self.num_layers, self.hidden_size).to(device),
                 torch.zeros(batch_size, self.num_layers, batch_size, self.hidden_size).to(device))
 
 
 class lstm_decoder(nn.Module):
-    ''' Decodes hidden state output by encoder '''
 
     def __init__(self, input_size, hidden_size, num_layers=1):
-        '''
-        : param input_size:     the number of features in the input X
-        : param hidden_size:    the number of features in the hidden state h
-        : param num_layers:     number of recurrent layers (i.e., 2 means there are
-        :                       2 stacked LSTMs)
-        '''
-
         super(lstm_decoder, self).__init__()
         self.input_size = input_size
         self.hidden_size = hidden_size
@@ -79,15 +50,6 @@ class lstm_decoder(nn.Module):
         self.linear = nn.Linear(hidden_size, input_size)
 
     def forward(self, x_input, encoder_hidden_states):
-        '''        
-        : param x_input:                    should be 2D (batch_size, input_size)
-        : param encoder_hidden_states:      hidden states
-        : return output, hidden:            output gives all the hidden states in the sequence;
-        :                                   hidden gives the hidden state and cell state for the last
-        :                                   element in the sequence 
-
-        '''
-
         lstm_out, self.hidden = self.lstm(
             x_input.unsqueeze(0), encoder_hidden_states)
         output = self.linear(lstm_out.squeeze(0))
@@ -96,14 +58,8 @@ class lstm_decoder(nn.Module):
 
 
 class lstm_seq2seq(nn.Module):
-    ''' train LSTM encoder-decoder and make predictions '''
 
     def __init__(self, input_size, hidden_size):
-        '''
-        : param input_size:     the number of expected features in the input X
-        : param hidden_size:    the number of features in the hidden state h
-        '''
-
         super(lstm_seq2seq, self).__init__()
 
         self.input_size = input_size
@@ -131,10 +87,6 @@ class lstm_seq2seq(nn.Module):
             for it in tr:
                 batches = 0
                 batch_loss = 0.
-                batch_loss_tf = 0.
-                batch_loss_no_tf = 0.
-                num_tf = 0
-                num_no_tf = 0
 
                 for i, data in enumerate(train_loader):
                     # select data
@@ -175,7 +127,7 @@ class lstm_seq2seq(nn.Module):
                                 decoder_output, decoder_hidden = self.decoder(
                                     decoder_input, decoder_hidden)
                                 outputs[t] = decoder_output
-                                decoder_input = (target[:, t]).unsqueeze(-1)
+                                decoder_input = target[:, t, :].float()
 
                         # predict recursively
                         else:
@@ -194,7 +146,7 @@ class lstm_seq2seq(nn.Module):
 
                             # predict with teacher forcing
                             if random.random() < teacher_forcing_ratio:
-                                decoder_input = (target[:, t]).unsqueeze(-1)
+                                decoder_input = target[:, t, :].float()
 
                             # predict recursively
                             else:
@@ -238,12 +190,6 @@ class lstm_seq2seq(nn.Module):
 
     @torch.no_grad()
     def calculate_loss(self, dataset, target_len):
-        '''
-        : param input_tensor:      input data (seq_len, input_size); PyTorch tensor 
-        : param target_len:        number of target values to predict 
-        : return np_outputs:       np.array containing predicted values; prediction done recursively 
-        '''
-
         train_loader = DataLoader(dataset, batch_size=32, drop_last=True)
         criterion = nn.CrossEntropyLoss()
 
@@ -283,7 +229,7 @@ class lstm_seq2seq(nn.Module):
                 output_argmax = outputs[:,i,:]
                 target_argmax = torch.argmax(target_tensor[:,i,:], dim=1).long().to(device)
                 batch_loss += criterion(output_argmax, target_argmax)
-            
+
             loss += batch_loss.item()
             results.append(outputs.detach())
 
@@ -291,3 +237,37 @@ class lstm_seq2seq(nn.Module):
         result = torch.stack(results)
 
         return result, loss
+
+    def predict(self, input_tensor, character_map, termination_char):
+        input_tensor = input_tensor.unsqueeze(0)
+        input_tensor = input_tensor.float().to(device)
+
+        outputs = []
+
+        # initialize hidden state
+        encoder_output, encoder_hidden = self.encoder(input_tensor)
+
+        # decode input_tensor
+        decoder_input = torch.zeros(1, self.input_size).to(device)
+        decoder_hidden = encoder_hidden
+
+        softmax = nn.Softmax(dim=-1)
+
+        pred = ""
+
+        for _ in range(10):
+            decoder_output, decoder_hidden = self.decoder(
+                    decoder_input, decoder_hidden)
+            outputs.append(decoder_output)
+            decoder_input = decoder_output
+
+            char_index = torch.argmax(softmax(decoder_output), dim=1).cpu().numpy()[0]
+            char_pred = character_map[char_index]
+            pred += char_pred
+
+            if char_pred == termination_char:
+                break
+
+        return pred
+            
+

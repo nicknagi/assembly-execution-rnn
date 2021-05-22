@@ -20,7 +20,6 @@ print(f"Running on {device}")
 
 # Simple assembly processor
 
-
 def execute_assembly(instructions):
     registers = [0, 0, 0, 0, 0, 0]  # R0, R1, R2, R3, R4, R5
     for instruction in instructions:
@@ -64,6 +63,15 @@ def s_to_i(s):
         instr_num.append(all_chars.index(char))
     return instr_num
 
+def convert_registers_to_one_hot(registers_list):
+    result_string = ""
+    for register in registers_list:
+        result_string += str(register)
+        result_string += " "
+    result_string += "~"
+    result_numerical = s_to_i(result_string)
+    result = torch.nn.functional.one_hot(torch.tensor(result_numerical))
+    return result
 
 def create_dataset(num_samples=10000):
     x, y = [], []
@@ -77,20 +85,14 @@ def create_dataset(num_samples=10000):
             result = execute_assembly(instructions)
             legal = result[random.randint(1,5)] != 0 and result[random.randint(1,5)] != 0
         
-        result_string = ""
-        for register in result:
-            result_string += str(register)
-            result_string += " "
-        result_string += "~"
-        result_numerical = s_to_i(result_string)
-        result = torch.nn.functional.one_hot(torch.tensor(result_numerical))
+        target = convert_registers_to_one_hot(result)
 
         instructions = "~".join(instructions) + "~"
         instructions = s_to_i(instructions)
         instructions = torch.nn.functional.one_hot(torch.tensor(instructions))
 
         x.append(instructions)
-        y.append(result)
+        y.append(target)
 
     x = torch.nn.utils.rnn.pad_sequence(x, batch_first=True)
     y = torch.nn.utils.rnn.pad_sequence(y, batch_first=True)
@@ -106,17 +108,31 @@ validation_dataset = TensorDataset(val_x, val_y)
 model = lstm_seq2seq(len(all_chars), 128)
 model = model.to(device)
 
-# TEST
-print(f"Initial validation loss is: {model.calculate_loss(validation_dataset, val_y.size()[1])[1]}")
+init_validation_loss = model.calculate_loss(validation_dataset, val_y.size()[1])[1]
 
-training_loss, validation_loss = model.train_model(train_dataset=train_dataset, batch_size=64, n_epochs=5, target_len=train_y.size()[1], validation_dataset=validation_dataset,
-                                                   training_prediction="recursive")
+training_loss, validation_loss = model.train_model(train_dataset=train_dataset, batch_size=64, n_epochs=1, target_len=train_y.size()[1],
+ validation_dataset=validation_dataset, training_prediction="teacher_forcing")
 
 plt.plot(training_loss)
 plt.show()
 
+validation_loss.insert(0, init_validation_loss)
 plt.plot(validation_loss)
 plt.show()
+
+# ------------------ MANUAL TESTING ---------------------
+
+instrs = ["ADD 2 R2"]
+expected = execute_assembly(instrs)
+
+instructions = "~".join(instrs) + "~"
+instructions = s_to_i(instructions)
+instructions_tensor = torch.nn.functional.one_hot(torch.tensor(instructions))
+print(instructions_tensor)
+
+pred = model.predict(instructions_tensor, all_chars, "~")
+
+print(f"Expected: {expected}, Prediction: {pred}")
 
 '''
 # TODO: Try decoder predicting one hot sequences until eos predicted
