@@ -1,5 +1,6 @@
 import numpy as np
 import random
+from torch.utils.data import dataset
 from tqdm import trange
 
 import torch
@@ -12,8 +13,6 @@ if torch.cuda.is_available():
     device = "cuda:0" 
 else:  
     device = "cpu" 
-
-
 
 class lstm_encoder(nn.Module):
     ''' Encodes time-series sequence '''
@@ -233,7 +232,8 @@ class lstm_seq2seq(nn.Module):
 
                 # loss for epoch 
                 batch_loss /= batches
-                losses[it] = batch_loss
+                # losses[it] = batch_loss
+                losses[it] = self.calculate_loss(train_dataset, 6)[1] # TEMP DELETE LATER
 
                 # dynamic teacher forcing
                 if dynamic_tf and teacher_forcing_ratio > 0:
