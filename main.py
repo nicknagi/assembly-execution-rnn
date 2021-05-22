@@ -68,10 +68,14 @@ def s_to_i(s):
 def create_dataset(num_samples=10000):
     x, y = [], []
     for _ in trange(num_samples):
-        instructions = [generate_assembly_instruction()
-                        for _ in range(random.randint(1, 10))]
+        legal = False
+        result = None
+        while not legal:
+            instructions = [generate_assembly_instruction()
+                            for _ in range(random.randint(1, 10))]
 
-        result = execute_assembly(instructions)
+            result = execute_assembly(instructions)
+            legal = result[random.randint(1,5)] != 0 and result[random.randint(1,5)] != 0
         result = torch.tensor(result, dtype=torch.float)
 
         instructions = "~".join(instructions) + "~"
@@ -94,7 +98,7 @@ validation_dataset = TensorDataset(val_x, val_y)
 
 model = lstm_seq2seq(21, 128)
 model = model.to(device)
-training_loss, validation_loss = model.train_model(train_dataset=train_dataset, batch_size=64, n_epochs=5, target_len=6, validation_dataset=validation_dataset,
+training_loss, validation_loss = model.train_model(train_dataset=train_dataset, batch_size=64, n_epochs=100, target_len=6, validation_dataset=validation_dataset,
                                                    training_prediction="recursive")
 
 plt.plot(training_loss)

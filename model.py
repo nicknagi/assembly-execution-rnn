@@ -204,6 +204,9 @@ class lstm_seq2seq(nn.Module):
                     outputs = torch.transpose(
                         outputs.squeeze(), 0, 1).to(device)
 
+                    if i == 5:
+                        print(outputs[0], target[0])
+
                     # compute the loss
                     loss = criterion(outputs, target)
 
