@@ -118,9 +118,14 @@ plt.plot(validation_loss)
 plt.plot(training_loss)
 plt.show()
 
+# # ------- SAVE MODEL --------------
+# torch.save(model.state_dict(), "test_model_save")
+# model = lstm_seq2seq(len(all_chars), 512)
+# model.load_state_dict(torch.load("test_model_save"))
+# model.to(device)
 # ------------------ MANUAL TESTING ---------------------
 
-instrs = ["ADD 2 R2"]
+instrs = ["ADD 15 R2"]
 expected = execute_assembly(instrs)
 
 instructions = "~".join(instrs) + "~"

@@ -184,7 +184,12 @@ class lstm_seq2seq(nn.Module):
 
                 # progress bar
                 tr.set_postfix(loss="{0:.3f}".format(batch_loss))
-                val_losses.append(self.calculate_loss(validation_dataset)[1])
+                validation_loss = self.calculate_loss(validation_dataset)[1]
+                val_losses.append(validation_loss)
+
+                # Checkpoint model
+                if it % 5 == 0:
+                    torch.save(self.state_dict(), f"models/bs_{batch_size}_epochs_{it}_lr_{learning_rate}_valloss_{validation_loss}")
 
         return losses, val_losses
 
