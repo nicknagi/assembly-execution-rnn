@@ -99,7 +99,7 @@ class lstm_seq2seq(nn.Module):
         best_model_path = f"models/{dir_name}/best_model.pt"
 
         # initialize the early_stopping object
-        early_stopping = EarlyStopping(patience=7, verbose=False, path=best_model_path)
+        early_stopping = EarlyStopping(patience=20, verbose=False, path=best_model_path)
 
         with trange(n_epochs) as tr:
             for it in tr:

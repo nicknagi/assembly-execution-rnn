@@ -43,7 +43,7 @@ def execute_assembly(instructions):
 # Generate a random assembly instruction
 def generate_assembly_instruction():
     instr = random.choice(["ADD", "SUB", "MOV"])
-    value = random.randint(1, 99)
+    value = random.randint(1, 9)
     destination_reg = "R" + str(random.randint(1, 5))
     source_reg = "R" + str(random.randint(0, 5))
 
@@ -94,8 +94,8 @@ def create_dataset(num_instrs, num_samples=10000):
     return x, y
 
 def run_training_for_model(model, num_instrs):
-    train_x, train_y = create_dataset(num_instrs ,num_samples=25000)
-    val_x, val_y = create_dataset(num_instrs, num_samples=1000)
+    train_x, train_y = create_dataset(num_instrs ,num_samples=10000*num_instrs)
+    val_x, val_y = create_dataset(num_instrs, num_samples=1000*num_instrs)
 
     train_dataset = TensorDataset(train_x, train_y)
     validation_dataset = TensorDataset(val_x, val_y)
@@ -110,7 +110,6 @@ all_chars = ["A", "D", "S", "U", "B", "M", "O", "V", "1", "2",
 
 if __name__ == "__main__":
     model = lstm_seq2seq(len(all_chars), 512)
-    # model.load_state_dict(torch.load("models/22 May 21:45/bs_128_epochs_54_lr_0.01_valloss_1.764981908182944")) # Incremental Learning
     model = model.to(device)
 
     NUM_INSTRS = 4
@@ -125,7 +124,3 @@ if __name__ == "__main__":
     plt.legend(loc="upper left")
     plt.savefig(f"results_{time.time()}.png")
     plt.show()
-
-    '''
-    # TODO: Try less digits, single digit values. Or try appending zero in front of single digits.
-    '''
