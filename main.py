@@ -77,7 +77,6 @@ def create_dataset(num_instrs, num_samples=10000):
         while not legal:
             instructions = [generate_assembly_instruction()
                             for _ in range(num_instrs)]
-            print(instructions)
             result = execute_assembly(instructions)
             legal = sum(result) != 0
         
