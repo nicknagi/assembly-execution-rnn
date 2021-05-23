@@ -41,8 +41,8 @@ def execute_assembly(instructions):
     return registers
 
 # Generate a random assembly instruction
-def generate_assembly_instruction():
-    instr = random.choice(["ADD", "SUB", "MOV"])
+def generate_assembly_instruction(possible_instructions):
+    instr = random.choice(possible_instructions)
     value = random.randint(1, 9)
     destination_reg = "R" + str(random.randint(1, 5))
     source_reg = "R" + str(random.randint(0, 5))
@@ -69,13 +69,13 @@ def convert_registers_to_one_hot(registers_list):
     return result
 
 # Create a dataset
-def create_dataset(num_instrs, num_samples=10000):
+def create_dataset(num_instrs, possible_instructions, num_samples=10000):
     x, y = [], []
     for _ in trange(num_samples):
         legal = False
         result = None
         while not legal:
-            instructions = [generate_assembly_instruction()
+            instructions = [generate_assembly_instruction(possible_instructions)
                             for _ in range(num_instrs)]
             result = execute_assembly(instructions)
             legal = sum(result) != 0
@@ -93,9 +93,9 @@ def create_dataset(num_instrs, num_samples=10000):
     y = torch.nn.utils.rnn.pad_sequence(y, batch_first=True)
     return x, y
 
-def run_training_for_model(model, num_instrs):
-    train_x, train_y = create_dataset(num_instrs ,num_samples=10000*num_instrs)
-    val_x, val_y = create_dataset(num_instrs, num_samples=1000*num_instrs)
+def run_training_for_model(model, num_instrs, possible_instructions=["ADD", "SUB", "MOV"]):
+    train_x, train_y = create_dataset(num_instrs ,num_samples=10000*num_instrs, possible_instructions=possible_instructions)
+    val_x, val_y = create_dataset(num_instrs, num_samples=1000*num_instrs, possible_instructions=possible_instructions)
 
     train_dataset = TensorDataset(train_x, train_y)
     validation_dataset = TensorDataset(val_x, val_y)
@@ -116,10 +116,24 @@ if __name__ == "__main__":
 
     for num_instrs in range(1,NUM_INSTRS+1):
         print(f"\n\nStarting training for {num_instrs}")
-        training_loss, validation_loss = run_training_for_model(model, num_instrs)
+        training_loss, validation_loss = run_training_for_model(model, num_instrs, possible_instructions=["ADD"])
 
-        plt.plot(training_loss, label=f"training loss {num_instrs}")
-        plt.plot(validation_loss, label=f"validation loss {num_instrs}")
+        plt.plot(training_loss, label=f"training loss {num_instrs} 1")
+        plt.plot(validation_loss, label=f"validation loss {num_instrs} 1")
+
+    for num_instrs in range(1,NUM_INSTRS+1):
+        print(f"\n\nStarting training for {num_instrs}")
+        training_loss, validation_loss = run_training_for_model(model, num_instrs, possible_instructions=["ADD", "SUB"])
+
+        plt.plot(training_loss, label=f"training loss {num_instrs} 2")
+        plt.plot(validation_loss, label=f"validation loss {num_instrs} 2")
+    
+    for num_instrs in range(1,NUM_INSTRS+1):
+        print(f"\n\nStarting training for {num_instrs}")
+        training_loss, validation_loss = run_training_for_model(model, num_instrs, possible_instructions=["ADD", "SUB", "MOV"])
+
+        plt.plot(training_loss, label=f"training loss {num_instrs} 3")
+        plt.plot(validation_loss, label=f"validation loss {num_instrs} 3")
 
     plt.legend(loc="upper left")
     plt.savefig(f"results_{time.time()}.png")
