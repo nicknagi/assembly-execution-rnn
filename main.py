@@ -80,7 +80,7 @@ def create_dataset(num_samples=10000):
         result = None
         while not legal:
             instructions = [generate_assembly_instruction()
-                            for _ in range(random.randint(2,2))]
+                            for _ in range(3)]
 
             result = execute_assembly(instructions)
             legal = sum(result) != 0
@@ -106,11 +106,12 @@ if __name__ == "__main__":
     validation_dataset = TensorDataset(val_x, val_y)
 
     model = lstm_seq2seq(len(all_chars), 512)
+    # model.load_state_dict(torch.load("models/22 May 21:25/bs_128_epochs_54_lr_0.01_valloss_2.0715185201937154")) # Incremental Learning
     model = model.to(device)
 
     init_validation_loss = model.calculate_loss(validation_dataset)[1]
 
-    training_loss, validation_loss = model.train_model(train_dataset=train_dataset, batch_size=128, n_epochs=100, target_len=train_y.size()[1],
+    training_loss, validation_loss = model.train_model(train_dataset=train_dataset, batch_size=128, n_epochs=150, target_len=train_y.size()[1],
     validation_dataset=validation_dataset, training_prediction="teacher_forcing", learning_rate=0.01)
 
     validation_loss.insert(0, init_validation_loss)
@@ -123,32 +124,6 @@ if __name__ == "__main__":
     # model = lstm_seq2seq(len(all_chars), 512)
     # model.load_state_dict(torch.load("test_model_save"))
     # model.to(device)
-    # ------------------ MANUAL TESTING ---------------------
-
-    instrs = ["ADD 15 R2"]
-    expected = execute_assembly(instrs)
-
-    instructions = "~".join(instrs) + "~"
-    instructions = s_to_i(instructions)
-    instructions_tensor = torch.nn.functional.one_hot(torch.tensor(instructions))
-
-    pred = model.predict(instructions_tensor, all_chars, "~", temperature=0.5)
-    print(f"Expected: {expected}, Prediction: {pred}")
-
-    pred = model.predict(instructions_tensor, all_chars, "~", temperature=0.8)
-    print(f"Expected: {expected}, Prediction: {pred}")
-
-    pred = model.predict(instructions_tensor, all_chars, "~", temperature=1.01)
-    print(f"Expected: {expected}, Prediction: {pred}")
-
-    pred = model.predict(instructions_tensor, all_chars, "~", temperature=1.1)
-    print(f"Expected: {expected}, Prediction: {pred}")
-
-    pred = model.predict(instructions_tensor, all_chars, "~", temperature=1.5)
-    print(f"Expected: {expected}, Prediction: {pred}")
-
-    pred = model.predict(instructions_tensor, all_chars, "~", temperature=1.75)
-    print(f"Expected: {expected}, Prediction: {pred}")
 
     '''
     # TODO: Try multinomial sampling for making predictions

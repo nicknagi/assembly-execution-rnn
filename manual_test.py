@@ -7,7 +7,7 @@ if torch.cuda.is_available():
 else:
     device = "cpu"
 
-instrs = ["SUB 22 R2"]
+instrs = ["ADD 22 R2", "ADD 12 R3", "SUB 15 R2"]
 expected = execute_assembly(instrs)
 
 instructions = "~".join(instrs) + "~"
@@ -15,8 +15,33 @@ instructions = s_to_i(instructions)
 instructions_tensor = torch.nn.functional.one_hot(torch.tensor(instructions))
 
 model = lstm_seq2seq(len(all_chars), 512)
-model.load_state_dict(torch.load("models/22 May 19:27/bs_128_epochs_99_lr_0.01_valloss_0.8033977196581902"))
+model.load_state_dict(torch.load("models/22 May 21:45/bs_128_epochs_54_lr_0.01_valloss_1.764981908182944"))
 model.to(device)
+
+pred = model.predict(instructions_tensor, all_chars, "~", temperature=0.01)
+print(f"Expected: {expected}, Prediction: {pred}")
+
+pred = model.predict(instructions_tensor, all_chars, "~", temperature=0.2)
+print(f"Expected: {expected}, Prediction: {pred}")
 
 pred = model.predict(instructions_tensor, all_chars, "~", temperature=0.5)
 print(f"Expected: {expected}, Prediction: {pred}")
+
+pred = model.predict(instructions_tensor, all_chars, "~", temperature=0.8)
+print(f"Expected: {expected}, Prediction: {pred}")
+
+pred = model.predict(instructions_tensor, all_chars, "~", temperature=1)
+print(f"Expected: {expected}, Prediction: {pred}")
+
+pred = model.predict(instructions_tensor, all_chars, "~", temperature=1.5)
+print(f"Expected: {expected}, Prediction: {pred}")
+
+pred = model.predict(instructions_tensor, all_chars, "~", temperature=2.0)
+print(f"Expected: {expected}, Prediction: {pred}")
+
+'''
+* Good Models:
+1. models/22 May 19:27/bs_128_epochs_99_lr_0.01_valloss_0.8033977196581902 -- trained for 2 instructions only
+2. models/22 May 21:25/bs_128_epochs_54_lr_0.01_valloss_2.0715185201937154 -- trained using incremental learning from 2 to 3
+3. models/22 May 21:45/bs_128_epochs_54_lr_0.01_valloss_1.764981908182944 -- trained even more on 3 instructions using model 2
+'''
