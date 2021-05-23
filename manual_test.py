@@ -7,7 +7,7 @@ if torch.cuda.is_available():
 else:
     device = "cpu"
 
-instrs = ["ADD 22 R2", "ADD 12 R3", "ADD 15 R2"]
+instrs = ["ADD 56 R2", "MOV R2 R4", "MOV R4 R3"]
 expected = execute_assembly(instrs)
 
 expected_string = ""
@@ -21,8 +21,12 @@ instructions = s_to_i(instructions)
 instructions_tensor = torch.nn.functional.one_hot(torch.tensor(instructions))
 
 model = lstm_seq2seq(len(all_chars), 512)
-model.load_state_dict(torch.load("models/22 May 23:07/bs_128_epochs_99_lr_0.01_valloss_4.73619742162766"))
+model.load_state_dict(torch.load("models/incremental-1/23 May 09:39:32/bs_128_epochs_99_lr_0.01_valloss_0.5769427094248033"))
 model.to(device)
+model.eval()
+
+pred = model.predict(instructions_tensor, all_chars, "~", temperature=0.001)
+print(f"Expected: {expected_string}, Prediction: {pred}")
 
 pred = model.predict(instructions_tensor, all_chars, "~", temperature=0.01)
 print(f"Expected: {expected_string}, Prediction: {pred}")
