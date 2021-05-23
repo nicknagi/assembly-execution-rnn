@@ -76,8 +76,8 @@ def create_dataset(num_instrs, num_samples=10000):
         result = None
         while not legal:
             instructions = [generate_assembly_instruction()
-                            for _ in range(num_instrs+1)]
-
+                            for _ in range(num_instrs)]
+            print(instructions)
             result = execute_assembly(instructions)
             legal = sum(result) != 0
         
@@ -101,7 +101,7 @@ def run_training_for_model(model, num_instrs):
     train_dataset = TensorDataset(train_x, train_y)
     validation_dataset = TensorDataset(val_x, val_y)
 
-    training_loss, validation_loss = model.train_model(train_dataset=train_dataset, batch_size=128, n_epochs=2, target_len=train_y.size()[1],
+    training_loss, validation_loss = model.train_model(train_dataset=train_dataset, batch_size=128, n_epochs=100, target_len=train_y.size()[1],
     validation_dataset=validation_dataset, training_prediction="teacher_forcing", learning_rate=0.01)
 
     return training_loss, validation_loss
@@ -114,14 +114,11 @@ if __name__ == "__main__":
     # model.load_state_dict(torch.load("models/22 May 21:45/bs_128_epochs_54_lr_0.01_valloss_1.764981908182944")) # Incremental Learning
     model = model.to(device)
 
-    training_losses = []
-    validation_losses = []
+    NUM_INSTRS = 4
 
-    for num_instrs in range(4):
+    for num_instrs in range(1,NUM_INSTRS+1):
         print(f"\n\nStarting training for {num_instrs}")
         training_loss, validation_loss = run_training_for_model(model, num_instrs)
-        # training_losses.append(training_loss)
-        # validation_losses.append(validation_loss)
 
         plt.plot(training_loss, label=f"training loss {num_instrs}")
         plt.plot(validation_loss, label=f"validation loss {num_instrs}")
