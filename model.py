@@ -50,11 +50,14 @@ class lstm_decoder(nn.Module):
 
         self.lstm = nn.LSTM(input_size=input_size, hidden_size=hidden_size,
                             num_layers=num_layers)
+        self.dropout = nn.Dropout(0.5)
         self.linear = nn.Linear(hidden_size, input_size)
 
     def forward(self, x_input, encoder_hidden_states):
         lstm_out, self.hidden = self.lstm(
             x_input.unsqueeze(0), encoder_hidden_states)
+        
+        lstm_out = self.dropout(lstm_out)
         output = self.linear(lstm_out.squeeze(0))
 
         return output, self.hidden
@@ -206,6 +209,8 @@ class lstm_seq2seq(nn.Module):
         data_loader = DataLoader(dataset, batch_size=32, drop_last=True)
         criterion = nn.CrossEntropyLoss()
 
+        self.eval() # Change model to eval mode
+
         batches = 0
         loss = 0
         results = []
@@ -251,8 +256,11 @@ class lstm_seq2seq(nn.Module):
         loss /= batches
         result = torch.stack(results)
 
+        self.train() # Change model to train mode
+
         return result, loss
     
+    # Make sure to change model to eval mode before calling this function
     @torch.no_grad()
     def predict(self, input_tensor, character_map, termination_char, temperature):
         from torch.distributions import Categorical
