@@ -11,6 +11,8 @@ from torch.utils.data.dataloader import DataLoader
 from datetime import datetime
 import os
 
+from earlystopping import EarlyStopping
+
 
 if torch.cuda.is_available():
     device = "cuda:0"
@@ -89,10 +91,15 @@ class lstm_seq2seq(nn.Module):
         optimizer = optim.SGD(self.parameters(), lr=learning_rate, momentum=0.9)
         criterion = nn.CrossEntropyLoss()
 
+
         # Make checkpointing directory
         now = datetime.now()
         dir_name = now.strftime("%d %B %H:%M:%S")
         os.mkdir(f"models/{dir_name}")
+        best_model_path = f"models/{dir_name}/best_model.pt"
+
+        # initialize the early_stopping object
+        early_stopping = EarlyStopping(patience=7, verbose=False, path=best_model_path)
 
         with trange(n_epochs) as tr:
             for it in tr:
@@ -198,9 +205,18 @@ class lstm_seq2seq(nn.Module):
                 validation_loss = self.calculate_loss(validation_dataset)[1]
                 val_losses.append(validation_loss)
 
-                # Checkpoint model
-                if it % 5 == 0 or it == n_epochs-1:
-                    torch.save(self.state_dict(), f"models/{dir_name}/bs_{batch_size}_epochs_{it}_lr_{learning_rate}_valloss_{validation_loss}")
+                early_stopping(validation_loss, self)
+                if early_stopping.early_stop:
+                    print("Early Stopping")
+                    # torch.save(self.state_dict(), f"models/{dir_name}/bs_{batch_size}_epochs_{it}_lr_{learning_rate}_valloss_{validation_loss}")
+                    break
+
+                # # Checkpoint model
+                # if it % 5 == 0 or it == n_epochs-1:
+                #     torch.save(self.state_dict(), f"models/{dir_name}/bs_{batch_size}_epochs_{it}_lr_{learning_rate}_valloss_{validation_loss}")
+        
+        # load the last checkpoint with the best model
+        self.load_state_dict(torch.load(best_model_path))
 
         return losses, val_losses
 

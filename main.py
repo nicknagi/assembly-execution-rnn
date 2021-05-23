@@ -127,5 +127,5 @@ if __name__ == "__main__":
     plt.show()
 
     '''
-    # TODO: Try single digit values in instructions and then incremental training (start with 1 instruction then 2...3...4)
+    # TODO: Try less digits, single digit values. Or try appending zero in front of single digits.
     '''
