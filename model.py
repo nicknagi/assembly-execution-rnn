@@ -200,21 +200,17 @@ class lstm_seq2seq(nn.Module):
                 if dynamic_tf and teacher_forcing_ratio > 0:
                     teacher_forcing_ratio = teacher_forcing_ratio - 0.02
 
-                # progress bar
-                tr.set_postfix(loss="{0:.3f}".format(batch_loss))
                 validation_loss = self.calculate_loss(validation_dataset)[1]
                 val_losses.append(validation_loss)
+
+                # progress bar
+                tr.set_description(f"loss: {batch_loss} val_loss: {validation_loss}")
 
                 early_stopping(validation_loss, self)
                 if early_stopping.early_stop:
                     print("Early Stopping")
-                    # torch.save(self.state_dict(), f"models/{dir_name}/bs_{batch_size}_epochs_{it}_lr_{learning_rate}_valloss_{validation_loss}")
                     break
 
-                # # Checkpoint model
-                # if it % 5 == 0 or it == n_epochs-1:
-                #     torch.save(self.state_dict(), f"models/{dir_name}/bs_{batch_size}_epochs_{it}_lr_{learning_rate}_valloss_{validation_loss}")
-        
         # load the last checkpoint with the best model
         self.load_state_dict(torch.load(best_model_path))
 

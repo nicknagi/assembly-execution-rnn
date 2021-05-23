@@ -21,7 +21,7 @@ instructions = s_to_i(instructions)
 instructions_tensor = torch.nn.functional.one_hot(torch.tensor(instructions))
 
 model = lstm_seq2seq(len(all_chars), 512)
-model.load_state_dict(torch.load("models/incremental-1/23 May 09:39:32/bs_128_epochs_99_lr_0.01_valloss_0.5769427094248033"))
+model.load_state_dict(torch.load("models/23 May 11:28:22/best_model.pt"))
 model.to(device)
 model.eval()
 
