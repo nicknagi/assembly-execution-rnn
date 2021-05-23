@@ -6,7 +6,7 @@ import torch.nn as nn
 from matplotlib import pyplot as plt
 from tqdm import trange
 from model import lstm_seq2seq
-import numpy as np
+import time
 
 if torch.cuda.is_available():
     device = "cuda:0"
@@ -124,6 +124,7 @@ if __name__ == "__main__":
         plt.plot(validation_loss, label=f"validation loss {num_instrs}")
 
     plt.legend(loc="upper left")
+    plt.savefig(f"results_{time.time()}.png")
     plt.show()
 
     '''
