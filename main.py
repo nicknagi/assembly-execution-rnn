@@ -126,6 +126,6 @@ if __name__ == "__main__":
     # model.to(device)
 
     '''
-    # TODO: Try multinomial sampling for making predictions
+    # TODO: Try single digit values in instructions and then incremental training
     # TODO: Instead of assembly try text generation using some random dataset -- this seems the best!
     '''
