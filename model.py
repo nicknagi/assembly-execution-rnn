@@ -128,7 +128,7 @@ class lstm_seq2seq(nn.Module):
                             outputs[t] = decoder_output
                             decoder_input = decoder_output
 
-                    if training_prediction == 'teacher_forcing':
+                    elif training_prediction == 'teacher_forcing':
                         # use teacher forcing
                         if random.random() < teacher_forcing_ratio:
                             for t in range(target_len):
@@ -145,7 +145,7 @@ class lstm_seq2seq(nn.Module):
                                 outputs[t] = decoder_output
                                 decoder_input = decoder_output
 
-                    if training_prediction == 'mixed_teacher_forcing':
+                    elif training_prediction == 'mixed_teacher_forcing':
                         # predict using mixed teacher forcing
                         for t in range(target_len):
                             decoder_output, decoder_hidden = self.decoder(
