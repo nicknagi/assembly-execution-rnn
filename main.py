@@ -43,7 +43,7 @@ def execute_assembly(instructions):
 # Generate a random assembly instruction
 def generate_assembly_instruction():
     instr = random.choice(["ADD", "SUB", "MOV"])
-    value = random.randint(10, 99)
+    value = random.randint(1, 99)
     destination_reg = "R" + str(random.randint(1, 5))
     source_reg = "R" + str(random.randint(0, 5))
 
@@ -69,14 +69,14 @@ def convert_registers_to_one_hot(registers_list):
     return result
 
 # Create a dataset
-def create_dataset(num_samples=10000):
+def create_dataset(num_instrs, num_samples=10000):
     x, y = [], []
     for _ in trange(num_samples):
         legal = False
         result = None
         while not legal:
             instructions = [generate_assembly_instruction()
-                            for _ in range(4)]
+                            for _ in range(num_instrs+1)]
 
             result = execute_assembly(instructions)
             legal = sum(result) != 0
@@ -94,28 +94,39 @@ def create_dataset(num_samples=10000):
     y = torch.nn.utils.rnn.pad_sequence(y, batch_first=True)
     return x, y
 
-all_chars = ["A", "D", "S", "U", "B", "M", "O", "V", "1", "2",
-             "3", "4", "5", "6", "7", "8", "9", "0", "R", " ", "-", "~"]
-
-if __name__ == "__main__":
-    train_x, train_y = create_dataset(num_samples=25000)
-    val_x, val_y = create_dataset(num_samples=1000)
+def run_training_for_model(model, num_instrs):
+    train_x, train_y = create_dataset(num_instrs ,num_samples=25000)
+    val_x, val_y = create_dataset(num_instrs, num_samples=1000)
 
     train_dataset = TensorDataset(train_x, train_y)
     validation_dataset = TensorDataset(val_x, val_y)
 
-    model = lstm_seq2seq(len(all_chars), 512)
-    model.load_state_dict(torch.load("models/22 May 21:45/bs_128_epochs_54_lr_0.01_valloss_1.764981908182944")) # Incremental Learning
-    model = model.to(device)
-
-    init_validation_loss = model.calculate_loss(validation_dataset)[1]
-
-    training_loss, validation_loss = model.train_model(train_dataset=train_dataset, batch_size=128, n_epochs=100, target_len=train_y.size()[1],
+    training_loss, validation_loss = model.train_model(train_dataset=train_dataset, batch_size=128, n_epochs=2, target_len=train_y.size()[1],
     validation_dataset=validation_dataset, training_prediction="teacher_forcing", learning_rate=0.01)
 
-    validation_loss.insert(0, init_validation_loss)
-    plt.plot(validation_loss)
-    plt.plot(training_loss)
+    return training_loss, validation_loss
+
+all_chars = ["A", "D", "S", "U", "B", "M", "O", "V", "1", "2",
+             "3", "4", "5", "6", "7", "8", "9", "0", "R", " ", "-", "~"]
+
+if __name__ == "__main__":
+    model = lstm_seq2seq(len(all_chars), 512)
+    # model.load_state_dict(torch.load("models/22 May 21:45/bs_128_epochs_54_lr_0.01_valloss_1.764981908182944")) # Incremental Learning
+    model = model.to(device)
+
+    training_losses = []
+    validation_losses = []
+
+    for num_instrs in range(4):
+        print(f"\n\nStarting training for {num_instrs}")
+        training_loss, validation_loss = run_training_for_model(model, num_instrs)
+        # training_losses.append(training_loss)
+        # validation_losses.append(validation_loss)
+
+        plt.plot(training_loss, label=f"training loss {num_instrs}")
+        plt.plot(validation_loss, label=f"validation loss {num_instrs}")
+
+    plt.legend(loc="upper left")
     plt.show()
 
     '''

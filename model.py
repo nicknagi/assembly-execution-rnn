@@ -88,7 +88,7 @@ class lstm_seq2seq(nn.Module):
 
         # Make checkpointing directory
         now = datetime.now()
-        dir_name = now.strftime("%d %B %H:%M")
+        dir_name = now.strftime("%d %B %H:%M:%S")
         os.mkdir(f"models/{dir_name}")
 
         with trange(n_epochs) as tr:
