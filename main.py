@@ -119,6 +119,5 @@ if __name__ == "__main__":
     plt.show()
 
     '''
-    # TODO: Try single digit values in instructions and then incremental training
-    # TODO: Instead of assembly try text generation using some random dataset -- this seems the best!
+    # TODO: Try single digit values in instructions and then incremental training (start with 1 instruction then 2...3...4)
     '''
