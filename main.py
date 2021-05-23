@@ -41,8 +41,6 @@ def execute_assembly(instructions):
     return registers
 
 # Generate a random assembly instruction
-
-
 def generate_assembly_instruction():
     instr = random.choice(["ADD", "SUB", "MOV"])
     value = random.randint(10, 99)
@@ -52,17 +50,14 @@ def generate_assembly_instruction():
     source_reg_or_val = random.choice([str(value), source_reg])
     return instr + " " + source_reg_or_val + " " + destination_reg
 
-
-all_chars = ["A", "D", "S", "U", "B", "M", "O", "V", "1", "2",
-             "3", "4", "5", "6", "7", "8", "9", "0", "R", " ", "-", "~"]
-
-
+# Convert string to numerical list based on char mapping
 def s_to_i(s):
     instr_num = []
     for char in s:
         instr_num.append(all_chars.index(char))
     return instr_num
 
+# Given a list of register values convert to one hot encoding
 def convert_registers_to_one_hot(registers_list):
     result_string = ""
     for register in registers_list:
@@ -73,6 +68,7 @@ def convert_registers_to_one_hot(registers_list):
     result = torch.nn.functional.one_hot(torch.tensor(result_numerical))
     return result
 
+# Create a dataset
 def create_dataset(num_samples=10000):
     x, y = [], []
     for _ in trange(num_samples):
@@ -98,6 +94,9 @@ def create_dataset(num_samples=10000):
     y = torch.nn.utils.rnn.pad_sequence(y, batch_first=True)
     return x, y
 
+all_chars = ["A", "D", "S", "U", "B", "M", "O", "V", "1", "2",
+             "3", "4", "5", "6", "7", "8", "9", "0", "R", " ", "-", "~"]
+
 if __name__ == "__main__":
     train_x, train_y = create_dataset(num_samples=25000)
     val_x, val_y = create_dataset(num_samples=1000)
@@ -118,12 +117,6 @@ if __name__ == "__main__":
     plt.plot(validation_loss)
     plt.plot(training_loss)
     plt.show()
-
-    # # ------- SAVE MODEL --------------
-    # torch.save(model.state_dict(), "test_model_save")
-    # model = lstm_seq2seq(len(all_chars), 512)
-    # model.load_state_dict(torch.load("test_model_save"))
-    # model.to(device)
 
     '''
     # TODO: Try single digit values in instructions and then incremental training
