@@ -21,7 +21,7 @@ instructions = s_to_i(instructions)
 instructions_tensor = torch.nn.functional.one_hot(torch.tensor(instructions))
 
 model = lstm_seq2seq(len(all_chars), 256)
-model.load_state_dict(torch.load("models/incremental-6/24 May 13:23:23/best_model.pt"))
+model.load_state_dict(torch.load("best_model.pt"))
 model.to(device)
 model.eval()
 
@@ -31,8 +31,8 @@ model.eval()
 # pred = model.predict(instructions_tensor, all_chars, "~", temperature=0.01)
 # print(f"Expected: {expected_string}, Prediction: {pred}")
 
-pred = model.predict(instructions_tensor, all_chars, "~", temperature=0.2)
-print(f"Expected: {expected_string}, Prediction: {pred}")
+# pred = model.predict(instructions_tensor, all_chars, "~", temperature=0.2)
+# print(f"Expected: {expected_string}, Prediction: {pred}")
 
 pred = model.predict(instructions_tensor, all_chars, "~", temperature=0.5)
 print(f"Expected: {expected_string}, Prediction: {pred}")
