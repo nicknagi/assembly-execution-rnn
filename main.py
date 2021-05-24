@@ -93,14 +93,14 @@ def create_dataset(num_instrs, possible_instructions, num_samples=10000):
     y = torch.nn.utils.rnn.pad_sequence(y, batch_first=True)
     return x, y
 
-def run_training_for_model(model, num_instrs, possible_instructions=["ADD", "SUB", "MOV"]):
-    train_x, train_y = create_dataset(num_instrs ,num_samples=10000*num_instrs, possible_instructions=possible_instructions)
-    val_x, val_y = create_dataset(num_instrs, num_samples=1000*num_instrs, possible_instructions=possible_instructions)
+def run_training_for_model(model, num_instrs, possible_instructions=["ADD", "SUB", "MOV"], data_factor=1):
+    train_x, train_y = create_dataset(num_instrs ,num_samples=10000*num_instrs*data_factor, possible_instructions=possible_instructions)
+    val_x, val_y = create_dataset(num_instrs, num_samples=1000*num_instrs*data_factor, possible_instructions=possible_instructions)
 
     train_dataset = TensorDataset(train_x, train_y)
     validation_dataset = TensorDataset(val_x, val_y)
 
-    training_loss, validation_loss = model.train_model(train_dataset=train_dataset, batch_size=128, n_epochs=100, target_len=train_y.size()[1],
+    training_loss, validation_loss = model.train_model(train_dataset=train_dataset, batch_size=128, n_epochs=150, target_len=train_y.size()[1],
     validation_dataset=validation_dataset, training_prediction="teacher_forcing", learning_rate=0.01)
 
     return training_loss, validation_loss
@@ -123,14 +123,14 @@ if __name__ == "__main__":
 
     for num_instrs in range(1,NUM_INSTRS+1):
         print(f"\n\nStarting training for {num_instrs}")
-        training_loss, validation_loss = run_training_for_model(model, num_instrs, possible_instructions=["ADD", "SUB"])
+        training_loss, validation_loss = run_training_for_model(model, num_instrs, possible_instructions=["ADD", "SUB"], data_factor=2)
 
         plt.plot(training_loss, label=f"training loss {num_instrs} 2")
         plt.plot(validation_loss, label=f"validation loss {num_instrs} 2")
     
     for num_instrs in range(1,NUM_INSTRS+1):
         print(f"\n\nStarting training for {num_instrs}")
-        training_loss, validation_loss = run_training_for_model(model, num_instrs, possible_instructions=["ADD", "SUB", "MOV"])
+        training_loss, validation_loss = run_training_for_model(model, num_instrs, possible_instructions=["ADD", "SUB", "MOV"], data_factor=3)
 
         plt.plot(training_loss, label=f"training loss {num_instrs} 3")
         plt.plot(validation_loss, label=f"validation loss {num_instrs} 3")
@@ -138,3 +138,4 @@ if __name__ == "__main__":
     plt.legend(loc="upper left")
     plt.savefig(f"results_{time.time()}.png")
     plt.show()
+    

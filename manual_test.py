@@ -7,7 +7,7 @@ if torch.cuda.is_available():
 else:
     device = "cpu"
 
-instrs = ["ADD 5 R2", "ADD 2 R2", "MOV R2 R1"]
+instrs = ["ADD 2 R2", "ADD 5 R2", "MOV R2 R1"]
 expected = execute_assembly(instrs)
 
 expected_string = ""
