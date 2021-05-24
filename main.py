@@ -109,7 +109,7 @@ all_chars = ["A", "D", "S", "U", "B", "M", "O", "V", "1", "2",
              "3", "4", "5", "6", "7", "8", "9", "0", "R", " ", "-", "~"]
 
 if __name__ == "__main__":
-    model = lstm_seq2seq(len(all_chars), 512)
+    model = lstm_seq2seq(len(all_chars), 256)
     model = model.to(device)
 
     NUM_INSTRS = 4
@@ -138,4 +138,3 @@ if __name__ == "__main__":
     plt.legend(loc="upper left")
     plt.savefig(f"results_{time.time()}.png")
     plt.show()
-    

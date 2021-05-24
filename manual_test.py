@@ -7,7 +7,7 @@ if torch.cuda.is_available():
 else:
     device = "cpu"
 
-instrs = ["ADD 2 R2", "ADD 5 R2", "MOV R2 R1"]
+instrs = ["ADD 4 R2", "SUB 3 R2", "MOV R2 R4", "ADD 1 R4"]
 expected = execute_assembly(instrs)
 
 expected_string = ""
@@ -20,16 +20,16 @@ instructions = "~".join(instrs) + "~"
 instructions = s_to_i(instructions)
 instructions_tensor = torch.nn.functional.one_hot(torch.tensor(instructions))
 
-model = lstm_seq2seq(len(all_chars), 512)
-model.load_state_dict(torch.load("models/incremental-5/23 May 18:24:37/best_model.pt"))
+model = lstm_seq2seq(len(all_chars), 256)
+model.load_state_dict(torch.load("models/incremental-6/24 May 13:23:23/best_model.pt"))
 model.to(device)
 model.eval()
 
-pred = model.predict(instructions_tensor, all_chars, "~", temperature=0.001)
-print(f"Expected: {expected_string}, Prediction: {pred}")
+# pred = model.predict(instructions_tensor, all_chars, "~", temperature=0.001)
+# print(f"Expected: {expected_string}, Prediction: {pred}")
 
-pred = model.predict(instructions_tensor, all_chars, "~", temperature=0.01)
-print(f"Expected: {expected_string}, Prediction: {pred}")
+# pred = model.predict(instructions_tensor, all_chars, "~", temperature=0.01)
+# print(f"Expected: {expected_string}, Prediction: {pred}")
 
 pred = model.predict(instructions_tensor, all_chars, "~", temperature=0.2)
 print(f"Expected: {expected_string}, Prediction: {pred}")
@@ -37,23 +37,23 @@ print(f"Expected: {expected_string}, Prediction: {pred}")
 pred = model.predict(instructions_tensor, all_chars, "~", temperature=0.5)
 print(f"Expected: {expected_string}, Prediction: {pred}")
 
-pred = model.predict(instructions_tensor, all_chars, "~", temperature=0.75)
-print(f"Expected: {expected_string}, Prediction: {pred}")
+# pred = model.predict(instructions_tensor, all_chars, "~", temperature=0.75)
+# print(f"Expected: {expected_string}, Prediction: {pred} Temperature: 0.75")
 
-pred = model.predict(instructions_tensor, all_chars, "~", temperature=0.8)
-print(f"Expected: {expected_string}, Prediction: {pred}")
+# pred = model.predict(instructions_tensor, all_chars, "~", temperature=0.8)
+# print(f"Expected: {expected_string}, Prediction: {pred} Temperature: 0.8")
 
-pred = model.predict(instructions_tensor, all_chars, "~", temperature=0.85)
-print(f"Expected: {expected_string}, Prediction: {pred}")
+# pred = model.predict(instructions_tensor, all_chars, "~", temperature=0.85)
+# print(f"Expected: {expected_string}, Prediction: {pred} Temperature: 0.85")
 
-pred = model.predict(instructions_tensor, all_chars, "~", temperature=1)
-print(f"Expected: {expected_string}, Prediction: {pred}")
+# pred = model.predict(instructions_tensor, all_chars, "~", temperature=1)
+# print(f"Expected: {expected_string}, Prediction: {pred}")
 
-pred = model.predict(instructions_tensor, all_chars, "~", temperature=1.5)
-print(f"Expected: {expected_string}, Prediction: {pred}")
+# pred = model.predict(instructions_tensor, all_chars, "~", temperature=1.5)
+# print(f"Expected: {expected_string}, Prediction: {pred}")
 
-pred = model.predict(instructions_tensor, all_chars, "~", temperature=2.0)
-print(f"Expected: {expected_string}, Prediction: {pred}")
+# pred = model.predict(instructions_tensor, all_chars, "~", temperature=2.0)
+# print(f"Expected: {expected_string}, Prediction: {pred}")
 
 '''
 * Good Models:
