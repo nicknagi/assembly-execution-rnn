@@ -19,7 +19,7 @@ if torch.cuda.is_available():
 else:
     device = "cpu"
 
-
+# Model adapted from https://github.com/lkulowski/LSTM_encoder_decoder
 class lstm_encoder(nn.Module):
 
     def __init__(self, input_size, hidden_size, num_layers=1):
