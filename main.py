@@ -18,6 +18,7 @@ torch.set_printoptions(edgeitems=100)
 
 print(f"Running on {device}")
 
+
 # Simple assembly processor
 
 def execute_assembly(instructions):
@@ -40,6 +41,7 @@ def execute_assembly(instructions):
             registers[dest_reg] = int(source)
     return registers
 
+
 # Generate a random assembly instruction
 def generate_assembly_instruction(possible_instructions):
     instr = random.choice(possible_instructions)
@@ -50,12 +52,14 @@ def generate_assembly_instruction(possible_instructions):
     source_reg_or_val = random.choice([str(value), source_reg])
     return instr + " " + source_reg_or_val + " " + destination_reg
 
+
 # Convert string to numerical list based on char mapping
 def s_to_i(s):
     instr_num = []
     for char in s:
         instr_num.append(all_chars.index(char))
     return instr_num
+
 
 # Given a list of register values convert to one hot encoding
 def convert_registers_to_one_hot(registers_list):
@@ -68,6 +72,7 @@ def convert_registers_to_one_hot(registers_list):
     result = torch.nn.functional.one_hot(torch.tensor(result_numerical))
     return result
 
+
 # Create a dataset
 def create_dataset(num_instrs, possible_instructions, num_samples=10000):
     x, y = [], []
@@ -79,7 +84,7 @@ def create_dataset(num_instrs, possible_instructions, num_samples=10000):
                             for _ in range(num_instrs)]
             result = execute_assembly(instructions)
             legal = sum(result) != 0
-        
+
         target = convert_registers_to_one_hot(result)
 
         instructions = "~".join(instructions) + "~"
@@ -93,17 +98,23 @@ def create_dataset(num_instrs, possible_instructions, num_samples=10000):
     y = torch.nn.utils.rnn.pad_sequence(y, batch_first=True)
     return x, y
 
+
 def run_training_for_model(model, num_instrs, possible_instructions=["ADD", "SUB", "MOV"], data_factor=1):
-    train_x, train_y = create_dataset(num_instrs ,num_samples=10000*num_instrs*data_factor, possible_instructions=possible_instructions)
-    val_x, val_y = create_dataset(num_instrs, num_samples=1000*num_instrs*data_factor, possible_instructions=possible_instructions)
+    train_x, train_y = create_dataset(num_instrs, num_samples=10000 * num_instrs * data_factor,
+                                      possible_instructions=possible_instructions)
+    val_x, val_y = create_dataset(num_instrs, num_samples=1000 * num_instrs * data_factor,
+                                  possible_instructions=possible_instructions)
 
     train_dataset = TensorDataset(train_x, train_y)
     validation_dataset = TensorDataset(val_x, val_y)
 
-    training_loss, validation_loss = model.train_model(train_dataset=train_dataset, batch_size=128, n_epochs=4, target_len=train_y.size()[1],
-    validation_dataset=validation_dataset, training_prediction="teacher_forcing", learning_rate=0.01)
+    training_loss, validation_loss = model.train_model(train_dataset=train_dataset, batch_size=128, n_epochs=4,
+                                                       target_len=train_y.size()[1],
+                                                       validation_dataset=validation_dataset,
+                                                       training_prediction="teacher_forcing", learning_rate=0.01)
 
     return training_loss, validation_loss
+
 
 all_chars = ["A", "D", "S", "U", "B", "M", "O", "V", "1", "2",
              "3", "4", "5", "6", "7", "8", "9", "0", "R", " ", "-", "~"]
@@ -127,7 +138,7 @@ if __name__ == "__main__":
     #
     #     plt.plot(training_loss, label=f"training loss {num_instrs} 2")
     #     plt.plot(validation_loss, label=f"validation loss {num_instrs} 2")
-    
+
     # for num_instrs in range(1,NUM_INSTRS+1):
     #     print(f"\n\nStarting training for {num_instrs}")
     #     training_loss, validation_loss = run_training_for_model(model, num_instrs, possible_instructions=["ADD", "SUB", "MOV"], data_factor=3)

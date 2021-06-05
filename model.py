@@ -13,11 +13,11 @@ import os
 
 from earlystopping import EarlyStopping
 
-
 if torch.cuda.is_available():
     device = "cuda:0"
 else:
     device = "cpu"
+
 
 # Model adapted from https://github.com/lkulowski/LSTM_encoder_decoder
 class lstm_encoder(nn.Module):
@@ -58,7 +58,7 @@ class lstm_decoder(nn.Module):
     def forward(self, x_input, encoder_hidden_states):
         lstm_out, self.hidden = self.lstm(
             x_input.unsqueeze(0), encoder_hidden_states)
-        
+
         lstm_out = self.dropout(lstm_out)
         output = self.linear(lstm_out.squeeze(0))
 
@@ -77,7 +77,8 @@ class lstm_seq2seq(nn.Module):
             input_size=input_size, hidden_size=hidden_size, num_layers=2)
         self.decoder = lstm_decoder(input_size=input_size, hidden_size=hidden_size, num_layers=2)
 
-    def train_model(self, train_dataset, batch_size, n_epochs, target_len, validation_dataset, training_prediction='recursive',
+    def train_model(self, train_dataset, batch_size, n_epochs, target_len, validation_dataset,
+                    training_prediction='recursive',
                     teacher_forcing_ratio=0.5, learning_rate=0.01, dynamic_tf=False):
 
         # initialize array of losses
@@ -90,7 +91,6 @@ class lstm_seq2seq(nn.Module):
 
         optimizer = optim.SGD(self.parameters(), lr=learning_rate, momentum=0.9)
         criterion = nn.CrossEntropyLoss()
-
 
         # Make checkpointing directory
         now = datetime.now()
@@ -180,8 +180,8 @@ class lstm_seq2seq(nn.Module):
                     # compute the loss
                     loss = 0
                     for i in range(target_len):
-                        output_argmax = outputs[:,i,:]
-                        target_argmax = torch.argmax(target[:,i,:], dim=1).long()
+                        output_argmax = outputs[:, i, :]
+                        target_argmax = torch.argmax(target[:, i, :], dim=1).long()
                         loss += criterion(output_argmax, target_argmax)
 
                     batch_loss += loss.item()
@@ -221,7 +221,7 @@ class lstm_seq2seq(nn.Module):
         data_loader = DataLoader(dataset, batch_size=128, drop_last=True, pin_memory=True)
         criterion = nn.CrossEntropyLoss()
 
-        self.eval() # Change model to eval mode
+        self.eval()  # Change model to eval mode
 
         batches = 0
         loss = 0
@@ -258,8 +258,8 @@ class lstm_seq2seq(nn.Module):
 
             batch_loss = 0
             for i in range(target_len):
-                output_argmax = outputs[:,i,:]
-                target_argmax = torch.argmax(target_tensor[:,i,:], dim=1).long().to(device)
+                output_argmax = outputs[:, i, :]
+                target_argmax = torch.argmax(target_tensor[:, i, :], dim=1).long().to(device)
                 batch_loss += criterion(output_argmax, target_argmax)
 
             loss += batch_loss.item()
@@ -268,10 +268,10 @@ class lstm_seq2seq(nn.Module):
         loss /= batches
         result = torch.stack(results)
 
-        self.train() # Change model to train mode
+        self.train()  # Change model to train mode
 
         return result, loss
-    
+
     # Make sure to change model to eval mode before calling this function
     @torch.no_grad()
     def predict(self, input_tensor, character_map, termination_char, temperature):
@@ -292,10 +292,10 @@ class lstm_seq2seq(nn.Module):
 
         for _ in range(20):
             decoder_output, decoder_hidden = self.decoder(
-                    decoder_input, decoder_hidden)
+                decoder_input, decoder_hidden)
             decoder_input = decoder_output
 
-            char_index = torch.multinomial(softmax(decoder_output/temperature), 1)[0].cpu().numpy()[0]
+            char_index = torch.multinomial(softmax(decoder_output / temperature), 1)[0].cpu().numpy()[0]
             char_pred = character_map[char_index]
             pred += char_pred
 
@@ -303,5 +303,3 @@ class lstm_seq2seq(nn.Module):
                 break
 
         return pred
-            
-
