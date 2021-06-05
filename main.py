@@ -2,11 +2,11 @@ import random
 import torch
 from torch.utils.data import TensorDataset
 from torch.utils.data.dataloader import DataLoader
-import torch.nn as nn
 from matplotlib import pyplot as plt
 from tqdm import trange
 from model import lstm_seq2seq
 import time
+from training import train_model
 
 if torch.cuda.is_available():
     device = "cuda:0"
@@ -20,7 +20,6 @@ print(f"Running on {device}")
 
 
 # Simple assembly processor
-
 def execute_assembly(instructions):
     registers = [0, 0, 0, 0, 0, 0]  # R0, R1, R2, R3, R4, R5
     for instruction in instructions:
@@ -99,7 +98,9 @@ def create_dataset(num_instrs, possible_instructions, num_samples=10000):
     return x, y
 
 
-def run_training_for_model(model, num_instrs, possible_instructions=["ADD", "SUB", "MOV"], data_factor=1):
+def run_training_for_model(model, num_instrs, possible_instructions=None, data_factor=1):
+    if possible_instructions is None:
+        possible_instructions = ["ADD", "SUB", "MOV"]
     train_x, train_y = create_dataset(num_instrs, num_samples=10000 * num_instrs * data_factor,
                                       possible_instructions=possible_instructions)
     val_x, val_y = create_dataset(num_instrs, num_samples=1000 * num_instrs * data_factor,
@@ -108,10 +109,10 @@ def run_training_for_model(model, num_instrs, possible_instructions=["ADD", "SUB
     train_dataset = TensorDataset(train_x, train_y)
     validation_dataset = TensorDataset(val_x, val_y)
 
-    training_loss, validation_loss = model.train_model(train_dataset=train_dataset, batch_size=128, n_epochs=4,
-                                                       target_len=train_y.size()[1],
-                                                       validation_dataset=validation_dataset,
-                                                       training_prediction="teacher_forcing", learning_rate=0.01)
+    training_loss, validation_loss = train_model(model, train_dataset=train_dataset, batch_size=128, n_epochs=1,
+                                                 target_len=train_y.size()[1],
+                                                 validation_dataset=validation_dataset,
+                                                 training_prediction="teacher_forcing", learning_rate=0.01)
 
     return training_loss, validation_loss
 
@@ -150,5 +151,11 @@ if __name__ == "__main__":
     # plt.savefig(f"results_{time.time()}.png")
     # plt.show()
 
-    training_loss, validation_loss = run_training_for_model(model, 4,
+    training_loss, validation_loss = run_training_for_model(model, 2,
                                                             possible_instructions=["ADD", "SUB", "MOV"], data_factor=1)
+    plt.plot(training_loss, label=f"training loss")
+    plt.plot(validation_loss, label=f"validation loss")
+
+    plt.legend(loc="upper left")
+    plt.savefig(f"results_{time.time()}.png")
+    plt.show()
