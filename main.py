@@ -1,9 +1,5 @@
-import random
-import torch
 from torch.utils.data import TensorDataset
-from torch.utils.data.dataloader import DataLoader
 from matplotlib import pyplot as plt
-from tqdm import trange
 from model import lstm_seq2seq
 import time
 from training import train_model
