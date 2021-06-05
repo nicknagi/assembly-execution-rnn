@@ -86,7 +86,7 @@ class lstm_seq2seq(nn.Module):
         granular_loss = []
 
         train_loader = DataLoader(
-            train_dataset, batch_size=batch_size, drop_last=True, shuffle=True)
+            train_dataset, batch_size=batch_size, drop_last=True, shuffle=True, pin_memory=True, num_workers=0)
 
         optimizer = optim.SGD(self.parameters(), lr=learning_rate, momentum=0.9)
         criterion = nn.CrossEntropyLoss()
@@ -117,8 +117,8 @@ class lstm_seq2seq(nn.Module):
                     # outputs tensor
                     outputs = torch.zeros(target_len, batch_size, self.input_size)
 
-                    # initialize hidden state
-                    encoder_hidden = self.encoder.init_hidden(batch_size)
+                    # # initialize hidden state - not needed for now
+                    # encoder_hidden = self.encoder.init_hidden(batch_size)
 
                     # zero the gradient
                     optimizer.zero_grad()
@@ -218,7 +218,7 @@ class lstm_seq2seq(nn.Module):
 
     @torch.no_grad()
     def calculate_loss(self, dataset):
-        data_loader = DataLoader(dataset, batch_size=32, drop_last=True)
+        data_loader = DataLoader(dataset, batch_size=128, drop_last=True, pin_memory=True)
         criterion = nn.CrossEntropyLoss()
 
         self.eval() # Change model to eval mode
