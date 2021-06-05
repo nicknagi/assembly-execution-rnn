@@ -138,7 +138,7 @@ def train_model(model, train_dataset, batch_size, n_epochs, target_len, validati
             if dynamic_tf and teacher_forcing_ratio > 0:
                 teacher_forcing_ratio = teacher_forcing_ratio - 0.02
 
-            validation_loss = calculate_loss(validation_dataset)[1]
+            validation_loss = calculate_loss(model, validation_dataset)[1]
             val_losses.append(validation_loss)
 
             # progress bar
