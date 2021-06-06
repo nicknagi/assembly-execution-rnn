@@ -5,12 +5,12 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 
 
-if torch.cuda.is_available():
-    device = "cuda:0"
-else:
-    device = "cpu"
+# if torch.cuda.is_available():
+#     device = "cuda:0"
+# else:
+#     device = "cpu"
 
-# device = "cpu"
+device = "cpu"
 
 def setup(rank, world_size):
     os.environ['MASTER_ADDR'] = 'localhost'

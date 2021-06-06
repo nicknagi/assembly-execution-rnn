@@ -12,12 +12,12 @@ from torch.utils.data.distributed import DistributedSampler
 from earlystopping import EarlyStopping
 from tqdm import trange
 
-if torch.cuda.is_available():
-    device = "cuda:0"
-else:
-    device = "cpu"
+# if torch.cuda.is_available():
+#     device = "cuda:0"
+# else:
+#     device = "cpu"
 
-# device = "cpu"
+device = "cpu"
 
 
 def train_model(model, train_dataset, batch_size, n_epochs, target_len, validation_dataset, is_distributed,
