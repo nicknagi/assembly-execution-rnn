@@ -33,11 +33,11 @@ parser.add_argument('--machine-num', default=0, type=int,
 
 
 def setup(rank, world_size):
-    os.environ['MASTER_ADDR'] = '192.168.2.165'
+    os.environ['MASTER_ADDR'] = '192.168.2.160'
     os.environ['MASTER_PORT'] = '12355'
 
     # initialize the process group
-    dist.init_process_group(dist.Backend.GLOO, rank=rank, world_size=world_size, init_method="tcp://192.168.2.165:12355")
+    dist.init_process_group(dist.Backend.GLOO, rank=rank, world_size=world_size, init_method="tcp://192.168.2.160:12355")
 
 
 def cleanup():
