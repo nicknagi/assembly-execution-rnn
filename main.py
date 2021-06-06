@@ -24,19 +24,19 @@ print(f"Running on {device}")
 
 
 def setup(rank, world_size):
-    os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_ADDR'] = '192.168.2.165'
     os.environ['MASTER_PORT'] = '12355'
 
     # initialize the process group
-    dist.init_process_group(dist.Backend.GLOO, rank=rank, world_size=world_size)
+    dist.init_process_group(dist.Backend.GLOO, rank=rank, world_size=world_size, init_method="tcp://192.168.2.165:12355")
 
 
 def cleanup():
     dist.destroy_process_group()
 
 
-def run_training_for_model(rank, world_size, num_instrs, possible_instructions=None, data_factor=1):
-    setup(rank, world_size)
+def run_training_for_model(rank, machine_number, world_size, num_instrs, possible_instructions=None, data_factor=1):
+    setup(rank+machine_number, world_size)
 
     model = lstm_seq2seq(len(all_chars), 256)
     model = model.to(device)
@@ -95,8 +95,10 @@ if __name__ == "__main__":
 
     # training_loss, validation_loss = run_training_for_model(model, 2,
     #                                                         possible_instructions=["ADD", "SUB", "MOV"], data_factor=1)
+
     world_size = 1
+    local_machine_number = 0
     mp.spawn(run_training_for_model,
-             args=(world_size, NUM_INSTRS, ["ADD", "SUB", "MOV"], 1),
-             nprocs=world_size,
+             args=(local_machine_number, world_size, NUM_INSTRS, ["ADD", "SUB", "MOV"], 1),
+             nprocs=1,
              join=True)
