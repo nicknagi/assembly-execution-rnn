@@ -8,6 +8,7 @@ import os
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.multiprocessing as mp
+import argparse
 
 
 using_gpu = False
@@ -21,6 +22,12 @@ torch.set_printoptions(precision=10)
 torch.set_printoptions(edgeitems=100)
 
 print(f"Running on {device}")
+
+parser = argparse.ArgumentParser(description='PyTorch DDP Test')
+parser.add_argument('--world-size', default=1, type=int,
+                    help='number of nodes for distributed training')
+parser.add_argument('--machine-num', default=0, type=int,
+                    help='machine identifier, starting with 0')
 
 
 def setup(rank, world_size):
@@ -67,6 +74,7 @@ def run_training_for_model(rank, machine_number, world_size, num_instrs, possibl
 if __name__ == "__main__":
 
     NUM_INSTRS = 4
+    args = parser.parse_args()
 
     # for num_instrs in range(1,NUM_INSTRS+1):
     #     print(f"\n\nStarting training for {num_instrs}")
@@ -96,9 +104,7 @@ if __name__ == "__main__":
     # training_loss, validation_loss = run_training_for_model(model, 2,
     #                                                         possible_instructions=["ADD", "SUB", "MOV"], data_factor=1)
 
-    world_size = 1
-    local_machine_number = 0
     mp.spawn(run_training_for_model,
-             args=(local_machine_number, world_size, NUM_INSTRS, ["ADD", "SUB", "MOV"], 1),
+             args=(args.machine_num, args.world_size, NUM_INSTRS, ["ADD", "SUB", "MOV"], 1),
              nprocs=1,
              join=True)
