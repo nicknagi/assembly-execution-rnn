@@ -49,7 +49,8 @@ def train_model(model, train_dataset, batch_size, n_epochs, target_len, validati
 
     with trange(n_epochs) as tr:
         for it in tr:
-            sampler.set_epoch(it)
+            if is_distributed:
+                sampler.set_epoch(it)
             batches = 0
             batch_loss = 0.
 

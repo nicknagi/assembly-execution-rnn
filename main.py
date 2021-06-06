@@ -86,4 +86,4 @@ if __name__ == "__main__":
                  nprocs=1,
                  join=True)
     else:
-        run_training_for_model(-1,-1,-1,NUM_INSTRS, ["ADD", "SUB", "MOV"], 1)
+        run_training_for_model(-1,-1,-1,False,NUM_INSTRS, ["ADD", "SUB", "MOV"], 1)
