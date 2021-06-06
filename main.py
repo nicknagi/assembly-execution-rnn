@@ -9,16 +9,19 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.multiprocessing as mp
 import argparse
+from config import FORCE_CPU, MASTER_IP, MASTER_PORT, BATCH_SIZE, NUM_EPOCHS
 
 
 using_gpu = False
-# if torch.cuda.is_available():
-#     device = "cuda:0"
-#     using_gpu = True
-# else:
-#     device = "cpu"
+if torch.cuda.is_available():
+    device = "cuda:0"
+    using_gpu = True
+else:
+    device = "cpu"
 
-device = "cpu"
+if FORCE_CPU:
+    device = "cpu"
+    using_gpu = False
 
 torch.set_printoptions(precision=10)
 torch.set_printoptions(edgeitems=100)
@@ -35,18 +38,20 @@ parser.add_argument('--machine-num', default=0, type=int,
 
 
 def setup(rank, world_size):
-    os.environ['MASTER_ADDR'] = '192.168.2.166'
-    os.environ['MASTER_PORT'] = '12355'
+    os.environ['MASTER_ADDR'] = MASTER_IP
+    os.environ['MASTER_PORT'] = MASTER_PORT
 
     # initialize the process group
-    dist.init_process_group(dist.Backend.GLOO, rank=rank, world_size=world_size, init_method="tcp://192.168.2.166:12355")
+    dist.init_process_group(dist.Backend.GLOO, rank=rank, world_size=world_size,
+                            init_method=f"tcp://{MASTER_IP}:{MASTER_PORT}")
 
 
 def cleanup():
     dist.destroy_process_group()
 
 
-def run_training_for_model(rank, machine_number, world_size, enable_ddp, num_instrs, possible_instructions=None, data_factor=1):
+def run_training_for_model(rank, machine_number, world_size, enable_ddp, num_instrs, possible_instructions=None,
+                           data_factor=1):
     if enable_ddp:
         setup(rank+machine_number, world_size)
 
@@ -63,7 +68,7 @@ def run_training_for_model(rank, machine_number, world_size, enable_ddp, num_ins
     train_dataset = TensorDataset(train_x, train_y)
     validation_dataset = TensorDataset(val_x, val_y)
 
-    train_loss, val_loss = train_model(model, train_dataset=train_dataset, batch_size=128, n_epochs=4,
+    train_loss, val_loss = train_model(model, train_dataset=train_dataset, batch_size=BATCH_SIZE, n_epochs=NUM_EPOCHS,
                                        target_len=train_y.size()[1],
                                        validation_dataset=validation_dataset, is_distributed=enable_ddp,
                                        training_prediction="teacher_forcing", learning_rate=0.01)

@@ -7,17 +7,19 @@ import torch.nn as nn
 import os
 import random
 from torch.utils.data.distributed import DistributedSampler
-
+from config import FORCE_CPU
 
 from earlystopping import EarlyStopping
 from tqdm import trange
 
-# if torch.cuda.is_available():
-#     device = "cuda:0"
-# else:
-#     device = "cpu"
+if torch.cuda.is_available():
+    device = "cuda:0"
+else:
+    device = "cpu"
 
-device = "cpu"
+if FORCE_CPU:
+    device = "cpu"
+    using_gpu = False
 
 
 def train_model(model, train_dataset, batch_size, n_epochs, target_len, validation_dataset, is_distributed,
