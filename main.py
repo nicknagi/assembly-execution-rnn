@@ -26,6 +26,8 @@ torch.set_printoptions(edgeitems=100)
 print(f"Running on {device}")
 
 parser = argparse.ArgumentParser(description='PyTorch DDP Test')
+parser.add_argument('--enable-ddp', action="store_true",
+                    help='use ddp or normal training')
 parser.add_argument('--world-size', default=1, type=int,
                     help='number of nodes for distributed training')
 parser.add_argument('--machine-num', default=0, type=int,
@@ -44,15 +46,12 @@ def cleanup():
     dist.destroy_process_group()
 
 
-def run_training_for_model(rank, machine_number, world_size, num_instrs, possible_instructions=None, data_factor=1):
-    setup(rank+machine_number, world_size)
+def run_training_for_model(rank, machine_number, world_size, enable_ddp, num_instrs, possible_instructions=None, data_factor=1):
+    if enable_ddp:
+        setup(rank+machine_number, world_size)
 
-    model = lstm_seq2seq(len(all_chars), 256)
+    model = lstm_seq2seq(len(all_chars), 256, enable_ddp=enable_ddp)
     model = model.to(device)
-    device_ids = []
-    if using_gpu:
-        device_ids.append(0)
-    model = DDP(model, device_ids=device_ids)  # Change if using GPU
 
     if possible_instructions is None:
         possible_instructions = ["ADD", "SUB", "MOV"]
@@ -68,7 +67,8 @@ def run_training_for_model(rank, machine_number, world_size, num_instrs, possibl
                                        target_len=train_y.size()[1],
                                        validation_dataset=validation_dataset,
                                        training_prediction="teacher_forcing", learning_rate=0.01)
-    cleanup()
+    if enable_ddp:
+        cleanup()
 
     return train_loss, val_loss
 
@@ -76,37 +76,14 @@ def run_training_for_model(rank, machine_number, world_size, num_instrs, possibl
 if __name__ == "__main__":
 
     NUM_INSTRS = 4
+    random.seed(42)
+    torch.manual_seed(42)
     args = parser.parse_args()
 
-    # for num_instrs in range(1,NUM_INSTRS+1):
-    #     print(f"\n\nStarting training for {num_instrs}")
-    #     training_loss, validation_loss = run_training_for_model(model, num_instrs, possible_instructions=["ADD"])
-    #
-    #     plt.plot(training_loss, label=f"training loss {num_instrs} 1")
-    #     plt.plot(validation_loss, label=f"validation loss {num_instrs} 1")
-    #
-    # for num_instrs in range(1,NUM_INSTRS+1):
-    #     print(f"\n\nStarting training for {num_instrs}")
-    #     training_loss, validation_loss = run_training_for_model(model, num_instrs, possible_instructions=["ADD", "SUB"], data_factor=2)
-    #
-    #     plt.plot(training_loss, label=f"training loss {num_instrs} 2")
-    #     plt.plot(validation_loss, label=f"validation loss {num_instrs} 2")
-
-    # for num_instrs in range(1,NUM_INSTRS+1):
-    #     print(f"\n\nStarting training for {num_instrs}")
-    #     training_loss, validation_loss = run_training_for_model(model, num_instrs, possible_instructions=["ADD", "SUB", "MOV"], data_factor=3)
-    #
-    #     plt.plot(training_loss, label=f"training loss {num_instrs} 3")
-    #     plt.plot(validation_loss, label=f"validation loss {num_instrs} 3")
-    #
-    # plt.legend(loc="upper left")
-    # plt.savefig(f"results_{time.time()}.png")
-    # plt.show()
-
-    # training_loss, validation_loss = run_training_for_model(model, 2,
-    #                                                         possible_instructions=["ADD", "SUB", "MOV"], data_factor=1)
-
-    mp.spawn(run_training_for_model,
-             args=(args.machine_num, args.world_size, NUM_INSTRS, ["ADD", "SUB", "MOV"], 1),
-             nprocs=1,
-             join=True)
+    if args.enable_ddp:
+        mp.spawn(run_training_for_model,
+                 args=(args.machine_num, args.world_size, args.enable_ddp, NUM_INSTRS, ["ADD", "SUB", "MOV"], 1),
+                 nprocs=1,
+                 join=True)
+    else:
+        run_training_for_model(-1,-1,-1,NUM_INSTRS, ["ADD", "SUB", "MOV"], 1)

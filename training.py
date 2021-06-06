@@ -17,7 +17,8 @@ from tqdm import trange
 
 device = "cpu"
 
-def train_model(ddp_model, train_dataset, batch_size, n_epochs, target_len, validation_dataset,
+
+def train_model(model, train_dataset, batch_size, n_epochs, target_len, validation_dataset,
                 training_prediction='recursive',
                 teacher_forcing_ratio=0.5, learning_rate=0.01, dynamic_tf=False):
     # initialize array of losses
@@ -28,7 +29,8 @@ def train_model(ddp_model, train_dataset, batch_size, n_epochs, target_len, vali
     train_loader = DataLoader(
         train_dataset, batch_size=batch_size, drop_last=True, shuffle=True, pin_memory=True, num_workers=0)
 
-    optimizer = optim.SGD(ddp_model.parameters(), lr=learning_rate, momentum=0.9)
+    optimizer = optim.SGD([{"params": model.encoder.parameters()}, {"params": model.decoder.parameters()}],
+                          lr=learning_rate, momentum=0.9)
     criterion = nn.CrossEntropyLoss()
 
     # Make checkpointing directory
@@ -54,7 +56,7 @@ def train_model(ddp_model, train_dataset, batch_size, n_epochs, target_len, vali
                 target = target.to(device)
 
                 # outputs tensor
-                outputs = torch.zeros(target_len, batch_size, ddp_model.module.input_size)
+                outputs = torch.zeros(target_len, batch_size, model.input_size)
 
                 # # initialize hidden state - not needed for now
                 # encoder_hidden = self.encoder.init_hidden(batch_size)
@@ -63,16 +65,16 @@ def train_model(ddp_model, train_dataset, batch_size, n_epochs, target_len, vali
                 optimizer.zero_grad()
 
                 # encoder outputs
-                encoder_output, encoder_hidden = ddp_model.module.encoder(code)
+                encoder_output, encoder_hidden = model.encoder(code)
 
                 # decoder with teacher forcing
-                decoder_input = torch.zeros((batch_size, ddp_model.module.input_size)).to(device)
+                decoder_input = torch.zeros((batch_size, model.input_size)).to(device)
                 decoder_hidden = encoder_hidden
 
                 if training_prediction == 'recursive':
                     # predict recursively
                     for t in range(target_len):
-                        decoder_output, decoder_hidden = ddp_model.module.decoder(
+                        decoder_output, decoder_hidden = model.decoder(
                             decoder_input, decoder_hidden)
                         outputs[t] = decoder_output
                         decoder_input = decoder_output
@@ -81,7 +83,7 @@ def train_model(ddp_model, train_dataset, batch_size, n_epochs, target_len, vali
                     # use teacher forcing
                     if random.random() < teacher_forcing_ratio:
                         for t in range(target_len):
-                            decoder_output, decoder_hidden = ddp_model.module.decoder(
+                            decoder_output, decoder_hidden = model.decoder(
                                 decoder_input, decoder_hidden)
                             outputs[t] = decoder_output
                             decoder_input = target[:, t, :].float()
@@ -89,7 +91,7 @@ def train_model(ddp_model, train_dataset, batch_size, n_epochs, target_len, vali
                     # predict recursively
                     else:
                         for t in range(target_len):
-                            decoder_output, decoder_hidden = ddp_model.module.decoder(
+                            decoder_output, decoder_hidden = model.decoder(
                                 decoder_input, decoder_hidden)
                             outputs[t] = decoder_output
                             decoder_input = decoder_output
@@ -97,7 +99,7 @@ def train_model(ddp_model, train_dataset, batch_size, n_epochs, target_len, vali
                 elif training_prediction == 'mixed_teacher_forcing':
                     # predict using mixed teacher forcing
                     for t in range(target_len):
-                        decoder_output, decoder_hidden = ddp_model.module.decoder(
+                        decoder_output, decoder_hidden = model.decoder(
                             decoder_input, decoder_hidden)
                         outputs[t] = decoder_output
 
@@ -139,29 +141,29 @@ def train_model(ddp_model, train_dataset, batch_size, n_epochs, target_len, vali
             if dynamic_tf and teacher_forcing_ratio > 0:
                 teacher_forcing_ratio = teacher_forcing_ratio - 0.02
 
-            validation_loss = calculate_loss(ddp_model, validation_dataset)[1]
+            validation_loss = calculate_loss(model, validation_dataset)[1]
             val_losses.append(validation_loss)
 
             # progress bar
             tr.set_description(f"loss: {batch_loss} val_loss: {validation_loss}")
 
-            early_stopping(validation_loss, ddp_model)
+            early_stopping(validation_loss, model)
             if early_stopping.early_stop:
                 print("Early Stopping")
                 break
 
     # load the last checkpoint with the best model
-    ddp_model.load_state_dict(torch.load(best_model_path))
+    model.load_state_dict(torch.load(best_model_path))
 
     return losses, val_losses
 
 
 @torch.no_grad()
-def calculate_loss(ddp_model, dataset):
+def calculate_loss(model, dataset):
     data_loader = DataLoader(dataset, batch_size=128, drop_last=True, pin_memory=True)
     criterion = nn.CrossEntropyLoss()
 
-    ddp_model.eval()  # Change model to eval mode
+    model.eval()  # Change model to eval mode
 
     batches = 0
     loss = 0
@@ -179,17 +181,17 @@ def calculate_loss(ddp_model, dataset):
         batch_size = input_tensor.size()[0]
 
         # initialize tensor for predictions
-        outputs = torch.zeros(target_len, batch_size, ddp_model.module.input_size)
+        outputs = torch.zeros(target_len, batch_size, model.input_size)
 
         # initialize hidden state
-        encoder_output, encoder_hidden = ddp_model.module.encoder(input_tensor)
+        encoder_output, encoder_hidden = model.encoder(input_tensor)
 
         # decode input_tensor
-        decoder_input = torch.zeros(batch_size, ddp_model.module.input_size).to(device)
+        decoder_input = torch.zeros(batch_size, model.input_size).to(device)
         decoder_hidden = encoder_hidden
 
         for t in range(target_len):
-            decoder_output, decoder_hidden = ddp_model.module.decoder(
+            decoder_output, decoder_hidden = model.decoder(
                 decoder_input, decoder_hidden)
             outputs[t] = decoder_output
             decoder_input = decoder_output
@@ -208,6 +210,6 @@ def calculate_loss(ddp_model, dataset):
     loss /= batches
     result = torch.stack(results)
 
-    ddp_model.train()  # Change model to train mode
+    model.train()  # Change model to train mode
 
     return result, loss

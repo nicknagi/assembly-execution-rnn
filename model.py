@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import os
 import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel as DDP
+
 
 # if torch.cuda.is_available():
 #     device = "cuda:0"
@@ -68,7 +70,7 @@ class lstm_decoder(nn.Module):
 
 class lstm_seq2seq(nn.Module):
 
-    def __init__(self, input_size, hidden_size):
+    def __init__(self, input_size, hidden_size, enable_ddp):
         super(lstm_seq2seq, self).__init__()
 
         self.input_size = input_size
@@ -77,6 +79,10 @@ class lstm_seq2seq(nn.Module):
         self.encoder = lstm_encoder(
             input_size=input_size, hidden_size=hidden_size, num_layers=2)
         self.decoder = lstm_decoder(input_size=input_size, hidden_size=hidden_size, num_layers=2)
+
+        if enable_ddp:
+            self.encoder = DDP(self.encoder, device_ids=[])  # Change if using GPU
+            self.decoder = DDP(self.decoder, device_ids=[])  # Change if using GPU
 
     # Make sure to change model to eval mode before calling this function
     @torch.no_grad()
