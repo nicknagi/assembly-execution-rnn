@@ -65,7 +65,7 @@ def run_training_for_model(rank, machine_number, world_size, enable_ddp, num_ins
 
     train_loss, val_loss = train_model(model, train_dataset=train_dataset, batch_size=128, n_epochs=4,
                                        target_len=train_y.size()[1],
-                                       validation_dataset=validation_dataset,
+                                       validation_dataset=validation_dataset, is_distributed=enable_ddp,
                                        training_prediction="teacher_forcing", learning_rate=0.01)
     if enable_ddp:
         cleanup()

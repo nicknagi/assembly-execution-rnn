@@ -6,6 +6,8 @@ import numpy as np
 import torch.nn as nn
 import os
 import random
+from torch.utils.data.distributed import DistributedSampler
+
 
 from earlystopping import EarlyStopping
 from tqdm import trange
@@ -18,7 +20,7 @@ from tqdm import trange
 device = "cpu"
 
 
-def train_model(model, train_dataset, batch_size, n_epochs, target_len, validation_dataset,
+def train_model(model, train_dataset, batch_size, n_epochs, target_len, validation_dataset, is_distributed,
                 training_prediction='recursive',
                 teacher_forcing_ratio=0.5, learning_rate=0.01, dynamic_tf=False):
     # initialize array of losses
@@ -26,8 +28,11 @@ def train_model(model, train_dataset, batch_size, n_epochs, target_len, validati
     val_losses = []
     granular_loss = []
 
+    sampler = DistributedSampler(train_dataset) if is_distributed else None
+
     train_loader = DataLoader(
-        train_dataset, batch_size=batch_size, drop_last=True, shuffle=True, pin_memory=True, num_workers=0)
+        train_dataset, batch_size=batch_size, drop_last=True, shuffle=(sampler is None),
+        pin_memory=True, num_workers=0, sampler=sampler)
 
     optimizer = optim.SGD([{"params": model.encoder.parameters()}, {"params": model.decoder.parameters()}],
                           lr=learning_rate, momentum=0.9)
@@ -44,6 +49,7 @@ def train_model(model, train_dataset, batch_size, n_epochs, target_len, validati
 
     with trange(n_epochs) as tr:
         for it in tr:
+            sampler.set_epoch(it)
             batches = 0
             batch_loss = 0.
 
