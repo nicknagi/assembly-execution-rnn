@@ -12,11 +12,13 @@ import argparse
 
 
 using_gpu = False
-if torch.cuda.is_available():
-    device = "cuda:0"
-    using_gpu = True
-else:
-    device = "cpu"
+# if torch.cuda.is_available():
+#     device = "cuda:0"
+#     using_gpu = True
+# else:
+#     device = "cpu"
+
+device = "cpu"
 
 torch.set_printoptions(precision=10)
 torch.set_printoptions(edgeitems=100)

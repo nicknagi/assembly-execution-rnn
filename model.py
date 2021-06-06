@@ -3,10 +3,12 @@ import torch.nn as nn
 import os
 import torch.distributed as dist
 
-if torch.cuda.is_available():
-    device = "cuda:0"
-else:
-    device = "cpu"
+# if torch.cuda.is_available():
+#     device = "cuda:0"
+# else:
+#     device = "cpu"
+
+device = "cpu"
 
 def setup(rank, world_size):
     os.environ['MASTER_ADDR'] = 'localhost'

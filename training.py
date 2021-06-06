@@ -10,11 +10,12 @@ import random
 from earlystopping import EarlyStopping
 from tqdm import trange
 
-if torch.cuda.is_available():
-    device = "cuda:0"
-else:
-    device = "cpu"
+# if torch.cuda.is_available():
+#     device = "cuda:0"
+# else:
+#     device = "cpu"
 
+device = "cpu"
 
 def train_model(ddp_model, train_dataset, batch_size, n_epochs, target_len, validation_dataset,
                 training_prediction='recursive',
