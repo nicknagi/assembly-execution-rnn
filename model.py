@@ -83,8 +83,10 @@ class lstm_seq2seq(nn.Module):
         self.decoder = lstm_decoder(input_size=input_size, hidden_size=hidden_size, num_layers=2)
 
         if enable_ddp:
-            self.encoder = DDP(self.encoder, device_ids=[])  # Change if using GPU
-            self.decoder = DDP(self.decoder, device_ids=[])  # Change if using GPU
+            self.encoder = self.encoder.to(device)
+            self.decoder = self.decoder.to(device)
+            self.encoder = DDP(self.encoder, device_ids=[0])  # Change if using GPU
+            self.decoder = DDP(self.decoder, device_ids=[0])  # Change if using GPU
 
     # Make sure to change model to eval mode before calling this function
     @torch.no_grad()

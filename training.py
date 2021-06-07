@@ -43,7 +43,7 @@ def train_model(model, train_dataset, batch_size, n_epochs, target_len, validati
     # Make checkpointing directory
     now = datetime.now()
     dir_name = now.strftime("%d %B %H:%M:%S")
-    os.mkdir(f"models/{dir_name}")
+    os.makedirs(f"models/{dir_name}", exist_ok=True)
     best_model_path = f"models/{dir_name}/best_model.pt"
 
     # initialize the early_stopping object

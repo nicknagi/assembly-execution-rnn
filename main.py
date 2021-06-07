@@ -25,6 +25,7 @@ if FORCE_CPU:
 
 torch.set_printoptions(precision=10)
 torch.set_printoptions(edgeitems=100)
+torch.set_num_threads(3)
 
 print(f"Running on {device}")
 
@@ -41,6 +42,7 @@ def setup(rank, world_size):
     os.environ['MASTER_ADDR'] = MASTER_IP
     os.environ['MASTER_PORT'] = MASTER_PORT
 
+    torch.cuda.set_device(0)
     # initialize the process group
     dist.init_process_group(dist.Backend.GLOO, rank=rank, world_size=world_size,
                             init_method=f"tcp://{MASTER_IP}:{MASTER_PORT}")
