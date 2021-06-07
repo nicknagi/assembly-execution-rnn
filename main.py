@@ -9,7 +9,7 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.multiprocessing as mp
 import argparse
-from config import FORCE_CPU, MASTER_IP, MASTER_PORT, BATCH_SIZE, NUM_EPOCHS
+from config import FORCE_CPU, MASTER_IP, MASTER_PORT, BATCH_SIZE, NUM_EPOCHS, ENABLE_GRAPHS
 
 
 using_gpu = False
@@ -91,4 +91,10 @@ if __name__ == "__main__":
                  nprocs=1,
                  join=True)
     else:
-        run_training_for_model(-1,-1,-1,False,NUM_INSTRS, ["ADD", "SUB", "MOV"], 1)
+        training_loss, validation_loss = run_training_for_model(-1,-1,-1,False,NUM_INSTRS, ["ADD", "SUB", "MOV"], 1)
+        if ENABLE_GRAPHS:
+            plt.plot(training_loss, label=f"training loss")
+            plt.plot(validation_loss, label=f"validation loss")
+            plt.legend(loc="upper left")
+            plt.savefig(f"results_{time.time()}.png")
+            plt.show()

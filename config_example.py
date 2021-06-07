@@ -6,3 +6,4 @@ MASTER_PORT = '12355'
 # Model Parameters
 BATCH_SIZE = 128
 NUM_EPOCHS = 4
+ENABLE_GRAPHS = True
